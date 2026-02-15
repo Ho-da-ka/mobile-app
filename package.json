@@ -1,0 +1,25 @@
+{
+  "name": "zf-youth-fitness-mobile-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev:mp-weixin": "uni -p mp-weixin",
+    "build:mp-weixin": "uni build -p mp-weixin",
+    "type-check": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "pinia": "2.1.7",
+    "uview-plus": "^3.3.53",
+    "vue": "3.4.21"
+  },
+  "devDependencies": {
+    "@dcloudio/types": "3.4.19",
+    "@dcloudio/uni-app": "3.0.0-4080720251210001",
+    "@dcloudio/vite-plugin-uni": "3.0.0-4080720251210001",
+    "@types/node": "^25.2.3",
+    "sass": "^1.97.3",
+    "typescript": "^5.4.2",
+    "vite": "5.2.8",
+    "vue-tsc": "^2.0.6"
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "easycom": {
+    "autoscan": true,
+    "custom": {
+      "^u-(.*)": "uview-plus/components/u-$1/u-$1.vue",
+      "^up-(.*)": "uview-plus/components/u-$1/u-$1.vue"
+    }
+  },
+  "pages": [
+    {
+      "path": "pages/login/index",
+      "style": {
+        "navigationBarTitleText": "登录"
+      }
+    },
+    {
+      "path": "pages/admin/home",
+      "style": {
+        "navigationBarTitleText": "管理首页"
+      }
+    },
+    {
+      "path": "pages/admin/students/list",
+      "style": {
+        "navigationBarTitleText": "学员管理"
+      }
+    },
+    {
+      "path": "pages/admin/students/form",
+      "style": {
+        "navigationBarTitleText": "学员表单"
+      }
+    },
+    {
+      "path": "pages/admin/students/detail",
+      "style": {
+        "navigationBarTitleText": "学员详情"
+      }
+    },
+    {
+      "path": "pages/admin/courses/list",
+      "style": {
+        "navigationBarTitleText": "课程管理"
+      }
+    },
+    {
+      "path": "pages/admin/courses/form",
+      "style": {
+        "navigationBarTitleText": "课程表单"
+      }
+    },
+    {
+      "path": "pages/admin/courses/detail",
+      "style": {
+        "navigationBarTitleText": "课程详情"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "ZF青少年体能教务",
+    "navigationBarBackgroundColor": "#ffffff",
+    "backgroundColor": "#f5f7fb"
+  }
+}

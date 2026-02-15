@@ -1,0 +1,18 @@
+{
+  "name": "ZF青少年体能教务移动端",
+  "appid": "__UNI__ZF_MOBILE__",
+  "description": "ZF Youth Fitness Academy 小程序",
+  "versionName": "0.1.0",
+  "versionCode": "100",
+  "transformPx": false,
+  "mp-weixin": {
+    "appid": "",
+    "setting": {
+      "urlCheck": false,
+      "es6": true,
+      "postcss": true,
+      "minified": false
+    },
+    "usingComponents": true
+  }
+}

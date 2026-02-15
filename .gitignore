@@ -1,0 +1,6 @@
+﻿node_modules/
+.uni/
+dist/
+.DS_Store
+*.log
+.npm-cache/
