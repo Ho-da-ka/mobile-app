@@ -11,7 +11,7 @@
 
       <view style="margin-top: 20rpx">
         <view class="required">密码</view>
-        <input class="input" v-model="form.password" type="password" placeholder="请输入密码" />
+        <input class="input" v-model="form.password" password placeholder="请输入密码" />
       </view>
 
       <view style="margin-top: 20rpx">
