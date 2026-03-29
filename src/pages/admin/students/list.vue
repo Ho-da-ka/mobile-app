@@ -1,11 +1,11 @@
-<template>
+﻿<template>
   <view class="page">
     <view class="card">
       <view class="title">学员管理</view>
 
       <view style="margin-top: 16rpx">
         <view>姓名筛选</view>
-        <input class="input" v-model="query.name" placeholder="按姓名搜索" />
+        <input class="input" v-model="query.name" placeholder="按学员姓名搜索" />
       </view>
 
       <view style="margin-top: 16rpx">
@@ -30,7 +30,7 @@
           <view>
             <view style="font-size: 30rpx; font-weight: 600">{{ item.name }}</view>
             <view class="sub-title" style="margin-top: 8rpx">学号：{{ item.studentNo }}</view>
-            <view class="sub-title">性别：{{ genderText(item.gender) }} ｜ 状态：{{ statusText(item.status) }}</view>
+            <view class="sub-title">性别：{{ genderText(item.gender) }} / 状态：{{ statusText(item.status) }}</view>
           </view>
           <view class="row" style="gap: 10rpx">
             <u-button size="mini" text="详情" @click="goDetail(item.id)" />

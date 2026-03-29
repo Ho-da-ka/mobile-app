@@ -4,15 +4,10 @@ import uni from '@dcloudio/vite-plugin-uni'
 
 export default defineConfig({
   plugins: [uni()],
+  appType: 'custom',
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
-    }
-  },
-  appType: 'custom',
-  build: {
-    rollupOptions: {
-      input: fileURLToPath(new URL('./src/main.ts', import.meta.url))
     }
   }
 })

@@ -1,4 +1,4 @@
-export function getErrorMessage(error: unknown, fallback = '操作失败'): string {
+﻿export function getErrorMessage(error: unknown, fallback = '操作失败'): string {
   if (error instanceof Error && error.message) {
     return error.message
   }

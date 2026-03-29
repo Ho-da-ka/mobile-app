@@ -1,8 +1,8 @@
-<template>
+﻿<template>
   <view class="page">
     <view class="card">
       <view class="title">管理端登录</view>
-      <view class="sub-title" style="margin-top: 8rpx">ZF青少年体能培训教务管理平台</view>
+      <view class="sub-title" style="margin-top: 8rpx">ZF 青少年体能培训教务管理平台</view>
 
       <view style="margin-top: 28rpx">
         <view class="required">用户名</view>
@@ -25,7 +25,7 @@
         <u-button type="primary" :loading="loading" text="登录并进入系统" @click="handleLogin" />
       </view>
 
-      <view class="tip">当前阶段鉴权方式：HTTP Basic（阶段2将扩展JWT）</view>
+      <view class="tip">当前阶段鉴权方式：HTTP Basic，后续会扩展为 JWT 双角色登录。</view>
     </view>
   </view>
 </template>
@@ -73,7 +73,7 @@ async function handleLogin() {
       uni.reLaunch({ url: '/pages/admin/home' })
     }, 300)
   } catch (error) {
-    showError(error, '登录失败，请检查账号或后端服务')
+    showError(error, '登录失败，请检查账号、密码或后端服务')
   } finally {
     loading.value = false
   }

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <view class="page">
     <view class="card" v-if="loading">加载中...</view>
 
@@ -95,4 +95,3 @@ onLoad((query) => {
   color: #6b7280;
 }
 </style>
-

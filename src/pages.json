@@ -54,6 +54,54 @@
       "style": {
         "navigationBarTitleText": "课程详情"
       }
+    },
+    {
+      "path": "pages/admin/coaches/list",
+      "style": {
+        "navigationBarTitleText": "教练信息"
+      }
+    },
+    {
+      "path": "pages/admin/attendances/list",
+      "style": {
+        "navigationBarTitleText": "考勤管理"
+      }
+    },
+    {
+      "path": "pages/admin/attendances/form",
+      "style": {
+        "navigationBarTitleText": "新增考勤"
+      }
+    },
+    {
+      "path": "pages/admin/fitness/list",
+      "style": {
+        "navigationBarTitleText": "体测管理"
+      }
+    },
+    {
+      "path": "pages/admin/fitness/form",
+      "style": {
+        "navigationBarTitleText": "新增体测"
+      }
+    },
+    {
+      "path": "pages/admin/training/list",
+      "style": {
+        "navigationBarTitleText": "训练记录"
+      }
+    },
+    {
+      "path": "pages/admin/training/form",
+      "style": {
+        "navigationBarTitleText": "训练记录表单"
+      }
+    },
+    {
+      "path": "pages/admin/training/detail",
+      "style": {
+        "navigationBarTitleText": "训练记录详情"
+      }
     }
   ],
   "globalStyle": {

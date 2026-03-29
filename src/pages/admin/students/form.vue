@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <view class="page">
     <view class="card">
       <view class="title">{{ isCreate ? '新增学员' : '编辑学员' }}</view>
@@ -144,7 +144,7 @@ function validate(): string | null {
 
   const phone = trimText(form.guardianPhone)
   if (!GUARDIAN_PHONE_REGEX.test(phone || '')) {
-    return '监护人电话格式不正确（支持6-20位数字或+、-）'
+    return '监护人电话格式不正确（支持 6-20 位数字或 +、-）'
   }
 
   return null
@@ -257,4 +257,3 @@ onLoad(async (query) => {
   min-height: 160rpx;
 }
 </style>
-

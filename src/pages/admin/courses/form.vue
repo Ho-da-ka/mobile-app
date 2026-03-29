@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <view class="page">
     <view class="card">
       <view class="title">{{ isCreate ? '新增课程' : '编辑课程' }}</view>
@@ -56,7 +56,7 @@
 
       <view style="margin-top: 20rpx">
         <view>描述</view>
-        <textarea class="textarea" v-model="form.description" maxlength="255" placeholder="请输入描述" />
+        <textarea class="textarea" v-model="form.description" maxlength="255" placeholder="请输入课程描述" />
       </view>
 
       <view class="form-actions">
@@ -164,7 +164,7 @@ function validate(): string | null {
   if (!form.startClock) return '请选择开始时间'
 
   const duration = toPositiveInt(form.durationMinutes, 0)
-  if (duration <= 0) return '课程时长必须大于0'
+  if (duration <= 0) return '课程时长必须大于 0'
 
   return null
 }
@@ -279,4 +279,3 @@ onLoad(async (query) => {
   min-height: 160rpx;
 }
 </style>
-

@@ -1,10 +1,10 @@
-<template>
+﻿<template>
   <view class="page">
     <view class="card">
       <view class="title">课程管理</view>
 
       <view style="margin-top: 16rpx">
-        <view>课程名筛选</view>
+        <view>课程名称筛选</view>
         <input class="input" v-model="query.name" placeholder="按课程名称搜索" />
       </view>
 
@@ -29,8 +29,8 @@
         <view class="row between">
           <view>
             <view style="font-size: 30rpx; font-weight: 600">{{ item.name }}</view>
-            <view class="sub-title" style="margin-top: 8rpx">编码：{{ item.courseCode }} ｜ 状态：{{ statusText(item.status) }}</view>
-            <view class="sub-title">{{ item.startTime }} ｜ {{ item.durationMinutes }} 分钟</view>
+            <view class="sub-title" style="margin-top: 8rpx">编码：{{ item.courseCode }} / 状态：{{ statusText(item.status) }}</view>
+            <view class="sub-title">{{ item.startTime }} / {{ item.durationMinutes }} 分钟</view>
           </view>
           <view class="row" style="gap: 10rpx">
             <u-button size="mini" text="详情" @click="goDetail(item.id)" />
