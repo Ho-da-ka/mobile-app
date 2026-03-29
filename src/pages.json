@@ -102,6 +102,72 @@
       "style": {
         "navigationBarTitleText": "训练记录详情"
       }
+    },
+    {
+      "path": "pages/student/home",
+      "style": {
+        "navigationBarTitleText": "学生首页"
+      }
+    },
+    {
+      "path": "pages/student/courses/list",
+      "style": {
+        "navigationBarTitleText": "学生课程"
+      }
+    },
+    {
+      "path": "pages/student/training/list",
+      "style": {
+        "navigationBarTitleText": "学生训练记录"
+      }
+    },
+    {
+      "path": "pages/student/fitness/list",
+      "style": {
+        "navigationBarTitleText": "学生体测记录"
+      }
+    },
+    {
+      "path": "pages/parent/home",
+      "style": {
+        "navigationBarTitleText": "家长首页"
+      }
+    },
+    {
+      "path": "pages/parent/children/list",
+      "style": {
+        "navigationBarTitleText": "我的孩子"
+      }
+    },
+    {
+      "path": "pages/parent/courses/list",
+      "style": {
+        "navigationBarTitleText": "可约课程"
+      }
+    },
+    {
+      "path": "pages/parent/bookings/list",
+      "style": {
+        "navigationBarTitleText": "预约记录"
+      }
+    },
+    {
+      "path": "pages/parent/checkin/list",
+      "style": {
+        "navigationBarTitleText": "签到记录"
+      }
+    },
+    {
+      "path": "pages/parent/fitness/list",
+      "style": {
+        "navigationBarTitleText": "体测结果"
+      }
+    },
+    {
+      "path": "pages/parent/messages/list",
+      "style": {
+        "navigationBarTitleText": "站内消息"
+      }
     }
   ],
   "globalStyle": {
