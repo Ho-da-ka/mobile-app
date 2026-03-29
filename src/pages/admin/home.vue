@@ -89,13 +89,13 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
-import { verifyPublicPing } from '@/api/modules/auth'
+import { logout, verifyPublicPing } from '@/api/modules/auth'
 import { listAttendances } from '@/api/modules/attendance'
 import { listCourses } from '@/api/modules/courses'
 import { listFitnessTests } from '@/api/modules/fitness'
 import { listStudents } from '@/api/modules/students'
 import { listTrainingRecords } from '@/api/modules/training'
-import { clearAuth, getAuth, isLoggedIn } from '@/store/auth'
+import { getAuth, isLoggedIn } from '@/store/auth'
 import { showError } from '@/utils/error'
 
 const pingText = ref('未知')
@@ -112,7 +112,13 @@ const stats = reactive({
 const userSummary = computed(() => {
   const auth = getAuth()
   if (!auth) return '未登录'
-  const roleLabel = auth.role === 'ADMIN' ? '管理员' : '教练'
+  const roleLabelMap = {
+    ADMIN: '管理员',
+    COACH: '教练',
+    STUDENT: '学生',
+    PARENT: '家长'
+  }
+  const roleLabel = roleLabelMap[auth.role] || auth.role
   return `${auth.username}（${roleLabel}）`
 })
 
@@ -196,8 +202,9 @@ function goTraining() {
   uni.navigateTo({ url: '/pages/admin/training/list' })
 }
 
-function handleLogout() {
-  clearAuth()
+async function handleLogout() {
+  const refreshToken = getAuth()?.refreshToken
+  await logout(refreshToken)
   uni.reLaunch({ url: '/pages/login/index' })
 }
 

@@ -51,8 +51,17 @@ npm run build:mp-weixin
 npm run type-check
 ```
 
-## 接口与鉴权（阶段1）
-- 鉴权方式：HTTP Basic（与现有后端保持一致）
+## 接口与鉴权
+- 鉴权方式：JWT Bearer（支持登录、刷新、登出）
+- 认证接口：
+  - `POST /api/v1/auth/login`
+  - `POST /api/v1/auth/refresh`
+  - `POST /api/v1/auth/logout`
+- 默认账号：
+  - `admin / Admin@123`
+  - `coach / Coach@123`
+  - `student / Student@123`
+  - `parent / Parent@123`
 - 基础联调接口：
   - `GET /api/v1/public/ping`
   - `GET/POST/PUT /api/v1/students...`

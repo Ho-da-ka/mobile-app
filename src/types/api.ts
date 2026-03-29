@@ -54,4 +54,4 @@ export interface TrainingRecord {
   updatedAt?: string
 }
 
-export type RoleCode = 'ADMIN' | 'COACH'
+export type RoleCode = 'ADMIN' | 'COACH' | 'STUDENT' | 'PARENT'

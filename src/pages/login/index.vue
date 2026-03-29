@@ -1,7 +1,7 @@
-﻿<template>
+<template>
   <view class="page">
     <view class="card">
-      <view class="title">管理端登录</view>
+      <view class="title">统一登录</view>
       <view class="sub-title" style="margin-top: 8rpx">ZF 青少年体能培训教务管理平台</view>
 
       <view style="margin-top: 28rpx">
@@ -14,61 +14,39 @@
         <input class="input" v-model="form.password" password placeholder="请输入密码" />
       </view>
 
-      <view style="margin-top: 20rpx">
-        <view class="required">角色</view>
-        <picker :range="roleOptions" range-key="label" :value="roleIndex" @change="onRoleChange">
-          <view class="picker">{{ selectedRoleLabel }}</view>
-        </picker>
-      </view>
-
       <view class="form-actions">
         <u-button type="primary" :loading="loading" text="登录并进入系统" @click="handleLogin" />
       </view>
 
-      <view class="form-actions" style="margin-top: 12rpx">
-        <u-button plain text="预览学生端页面" @click="goStudentDemo" />
-        <u-button plain text="预览家长端页面" @click="goParentDemo" />
-      </view>
-
-      <view class="tip">当前阶段鉴权方式：HTTP Basic，后续会扩展为 JWT 双角色登录。</view>
+      <view class="tip">认证方式：JWT（Bearer Token）。登录后将根据角色自动进入对应首页。</view>
+      <view class="tip">默认账号：admin/Admin@123、coach/Coach@123、student/Student@123、parent/Parent@123</view>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { loginWithBasic, verifyPublicPing } from '@/api/modules/auth'
+import { loginWithJwt, verifyPublicPing } from '@/api/modules/auth'
 import type { RoleCode } from '@/types/api'
-import { isLoggedIn } from '@/store/auth'
+import { getAuth, isLoggedIn } from '@/store/auth'
 import { showError, showSuccess } from '@/utils/error'
-
-const roleOptions = [
-  { label: '管理员', value: 'ADMIN' as RoleCode },
-  { label: '教练', value: 'COACH' as RoleCode }
-]
 
 const loading = ref(false)
 const form = reactive({
   username: '',
-  password: '',
-  role: 'ADMIN' as RoleCode
+  password: ''
 })
 
-const roleIndex = computed(() => roleOptions.findIndex(item => item.value === form.role))
-const selectedRoleLabel = computed(() => roleOptions.find(item => item.value === form.role)?.label || '-')
-
-function onRoleChange(event: any) {
-  const index = Number(event.detail.value)
-  form.role = roleOptions[index]?.value || 'ADMIN'
+const roleHomeMap: Record<RoleCode, string> = {
+  ADMIN: '/pages/admin/home',
+  COACH: '/pages/admin/home',
+  STUDENT: '/pages/student/home',
+  PARENT: '/pages/parent/home'
 }
 
-function goStudentDemo() {
-  uni.reLaunch({ url: '/pages/student/home' })
-}
-
-function goParentDemo() {
-  uni.reLaunch({ url: '/pages/parent/home' })
+function routeByRole(role: RoleCode) {
+  uni.reLaunch({ url: roleHomeMap[role] || '/pages/admin/home' })
 }
 
 async function handleLogin() {
@@ -80,10 +58,10 @@ async function handleLogin() {
   loading.value = true
   try {
     await verifyPublicPing()
-    await loginWithBasic(form.username.trim(), form.password, form.role)
+    const authData = await loginWithJwt(form.username.trim(), form.password)
     showSuccess('登录成功')
     setTimeout(() => {
-      uni.reLaunch({ url: '/pages/admin/home' })
+      routeByRole(authData.role)
     }, 300)
   } catch (error) {
     showError(error, '登录失败，请检查账号、密码或后端服务')
@@ -94,14 +72,14 @@ async function handleLogin() {
 
 onLoad(() => {
   if (isLoggedIn()) {
-    uni.reLaunch({ url: '/pages/admin/home' })
+    const role = getAuth()?.role || 'ADMIN'
+    routeByRole(role)
   }
 })
 </script>
 
 <style scoped lang="scss">
-.input,
-.picker {
+.input {
   background: #f9fafb;
   border: 1rpx solid #e5e7eb;
   border-radius: 12rpx;

@@ -1,5 +1,4 @@
 import { request } from '@/api/http'
-import { encodeBase64 } from '@/utils/base64'
 import { clearAuth, setAuth } from '@/store/auth'
 import type { RoleCode } from '@/types/api'
 
@@ -7,6 +6,15 @@ interface PingData {
   service: string
   time: string
   status: string
+}
+
+export interface AuthTokenData {
+  tokenType: string
+  accessToken: string
+  accessTokenExpiresIn: number
+  refreshToken: string
+  username: string
+  role: RoleCode
 }
 
 export async function verifyPublicPing(): Promise<PingData> {
@@ -17,21 +25,46 @@ export async function verifyPublicPing(): Promise<PingData> {
   })
 }
 
-export async function loginWithBasic(username: string, password: string, role: RoleCode): Promise<void> {
-  const basicToken = encodeBase64(`${username}:${password}`)
-  setAuth({ username, role, basicToken })
+export async function loginWithJwt(username: string, password: string): Promise<AuthTokenData> {
+  const authData = await request<AuthTokenData>({
+    url: '/api/v1/auth/login',
+    method: 'POST',
+    data: {
+      username,
+      password
+    },
+    skipAuth: true
+  })
 
-  try {
-    await request({
-      url: '/api/v1/students?page=0&size=1',
-      method: 'GET'
-    })
-  } catch (error) {
-    clearAuth()
-    throw error
-  }
+  setAuth({
+    username: authData.username,
+    role: authData.role,
+    accessToken: authData.accessToken,
+    refreshToken: authData.refreshToken,
+    tokenType: authData.tokenType
+  })
+
+  return authData
 }
 
-export function logout(): void {
-  clearAuth()
+export async function refreshToken(refreshToken: string): Promise<AuthTokenData> {
+  return request<AuthTokenData>({
+    url: '/api/v1/auth/refresh',
+    method: 'POST',
+    data: { refreshToken },
+    skipAuth: true
+  })
+}
+
+export async function logout(refreshToken?: string): Promise<void> {
+  try {
+    await request<void>({
+      url: '/api/v1/auth/logout',
+      method: 'POST',
+      data: { refreshToken },
+      skipAuth: true
+    })
+  } finally {
+    clearAuth()
+  }
 }

@@ -5,7 +5,9 @@ const AUTH_KEY = 'zf_mp_auth'
 export interface AuthPayload {
   username: string
   role: RoleCode
-  basicToken: string
+  accessToken: string
+  refreshToken: string
+  tokenType: string
 }
 
 export function getAuth(): AuthPayload | null {
@@ -27,5 +29,5 @@ export function clearAuth(): void {
 }
 
 export function isLoggedIn(): boolean {
-  return !!getAuth()?.basicToken
+  return !!getAuth()?.accessToken
 }
