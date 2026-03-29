@@ -25,6 +25,11 @@
         <u-button type="primary" :loading="loading" text="登录并进入系统" @click="handleLogin" />
       </view>
 
+      <view class="form-actions" style="margin-top: 12rpx">
+        <u-button plain text="预览学生端页面" @click="goStudentDemo" />
+        <u-button plain text="预览家长端页面" @click="goParentDemo" />
+      </view>
+
       <view class="tip">当前阶段鉴权方式：HTTP Basic，后续会扩展为 JWT 双角色登录。</view>
     </view>
   </view>
@@ -56,6 +61,14 @@ const selectedRoleLabel = computed(() => roleOptions.find(item => item.value ===
 function onRoleChange(event: any) {
   const index = Number(event.detail.value)
   form.role = roleOptions[index]?.value || 'ADMIN'
+}
+
+function goStudentDemo() {
+  uni.reLaunch({ url: '/pages/student/home' })
+}
+
+function goParentDemo() {
+  uni.reLaunch({ url: '/pages/parent/home' })
 }
 
 async function handleLogin() {
