@@ -18,7 +18,7 @@
         <u-button type="primary" :loading="loading" text="登录并进入系统" @click="handleLogin" />
       </view>
 
-      <view class="tip">认证方式：JWT（Bearer Token）。登录后将根据角色自动进入对应首页。</view>
+      <view class="tip">认证方式：JWT（Bearer Token）。登录状态本地保存 7 天，超时后需重新登录。</view>
       <view class="tip">默认账号：admin/Admin@123、coach/Coach@123、student/Student@123、parent/Parent@123</view>
     </view>
   </view>
@@ -26,10 +26,8 @@
 
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
 import { loginWithJwt, verifyPublicPing } from '@/api/modules/auth'
 import type { RoleCode } from '@/types/api'
-import { getAuth, isLoggedIn } from '@/store/auth'
 import { showError, showSuccess } from '@/utils/error'
 
 const loading = ref(false)
@@ -70,12 +68,6 @@ async function handleLogin() {
   }
 }
 
-onLoad(() => {
-  if (isLoggedIn()) {
-    const role = getAuth()?.role || 'ADMIN'
-    routeByRole(role)
-  }
-})
 </script>
 
 <style scoped lang="scss">
