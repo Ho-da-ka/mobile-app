@@ -15,18 +15,18 @@
 
 ## 3. 家长侧接口
 
-- [ ] 3.1 children
-- [ ] 3.2 courses
-- [ ] 3.3 bookings create/cancel
-- [ ] 3.4 checkins
-- [ ] 3.5 fitness-tests
-- [ ] 3.6 messages list/read
+- [x] 3.1 children
+- [x] 3.2 courses
+- [x] 3.3 bookings create/cancel
+- [x] 3.4 checkins
+- [x] 3.5 fitness-tests
+- [x] 3.6 messages list/read
 
 ## 4. 前端家长页
 
-- [ ] 4.1 home
-- [ ] 4.2 children/courses/bookings/checkin/fitness/messages
-- [ ] 4.3 token 刷新机制
+- [x] 4.1 home
+- [x] 4.2 children/courses/bookings/checkin/fitness/messages
+- [x] 4.3 token 刷新机制
 
 ## 5. 联调与回归
 
