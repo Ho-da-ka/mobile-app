@@ -51,7 +51,7 @@ function doRequest<T>(options: RequestOptions, headers: Record<string, string>):
         })
       },
       fail: (error) => {
-        reject(new Error(getErrorMessage(error, '网络请求失败，请检查服务是否启动')))
+        reject(new Error(getErrorMessage(error, '网络请求失败，请检查后端服务是否启动')))
       }
     })
   })
@@ -141,3 +141,4 @@ export async function request<T>(options: RequestOptions, retry = true): Promise
 
   return body as T
 }
+

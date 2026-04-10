@@ -2,7 +2,7 @@
   <view class="page">
     <view class="card">
       <view class="title">学生端首页</view>
-      <view class="sub-title" style="margin-top: 8rpx">查看自己的课程、训练与体测数据。</view>
+      <view class="sub-title" style="margin-top: 8rpx">查看自己的课程、训练与体测数据</view>
 
       <view class="form-actions">
         <u-button type="primary" text="我的课程" @click="goCourses" />
@@ -62,3 +62,4 @@ onLoad(() => {
   ensureLogin()
 })
 </script>
+

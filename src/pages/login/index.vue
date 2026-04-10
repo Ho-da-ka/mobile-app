@@ -19,7 +19,7 @@
       </view>
 
       <view class="tip">认证方式：JWT（Bearer Token）。登录状态本地保存 7 天，超时后需重新登录。</view>
-      <view class="tip">默认账号：admin/Admin@123、coach/Coach@123、student/Student@123、parent/Parent@123</view>
+      <view class="tip">默认账号：admin/Admin@123，coach/Coach@123，student/Student@123，parent/Parent@123</view>
     </view>
   </view>
 </template>
@@ -67,7 +67,6 @@ async function handleLogin() {
     loading.value = false
   }
 }
-
 </script>
 
 <style scoped lang="scss">
@@ -85,3 +84,4 @@ async function handleLogin() {
   font-size: 24rpx;
 }
 </style>
+
