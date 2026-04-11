@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <view class="page">
     <view class="card">
       <view class="title">统一登录</view>
@@ -11,7 +11,17 @@
 
       <view style="margin-top: 20rpx">
         <view class="required">密码</view>
-        <input class="input" v-model="form.password" password placeholder="请输入密码" />
+        <view class="password-row">
+          <input
+            class="input password-input"
+            v-model="form.password"
+            :password="!showPassword"
+            placeholder="请输入密码"
+          />
+          <view class="toggle-password" @click="togglePassword">
+            {{ showPassword ? '隐藏' : '显示' }}
+          </view>
+        </view>
       </view>
 
       <view class="form-actions">
@@ -19,7 +29,6 @@
       </view>
 
       <view class="tip">认证方式：JWT（Bearer Token）。登录状态本地保存 7 天，超时后需重新登录。</view>
-      <view class="tip">默认账号：admin/Admin@123，coach/Coach@123，student/Student@123，parent/Parent@123</view>
     </view>
   </view>
 </template>
@@ -31,6 +40,7 @@ import type { RoleCode } from '@/types/api'
 import { showError, showSuccess } from '@/utils/error'
 
 const loading = ref(false)
+const showPassword = ref(false)
 const form = reactive({
   username: '',
   password: ''
@@ -45,6 +55,10 @@ const roleHomeMap: Record<RoleCode, string> = {
 
 function routeByRole(role: RoleCode) {
   uni.reLaunch({ url: roleHomeMap[role] || '/pages/admin/home' })
+}
+
+function togglePassword() {
+  showPassword.value = !showPassword.value
 }
 
 async function handleLogin() {
@@ -78,10 +92,26 @@ async function handleLogin() {
   margin-top: 10rpx;
 }
 
+.password-row {
+  position: relative;
+}
+
+.password-input {
+  padding-right: 140rpx;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 24rpx;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #0f766e;
+  font-size: 24rpx;
+}
+
 .tip {
   margin-top: 20rpx;
   color: #6b7280;
   font-size: 24rpx;
 }
 </style>
-

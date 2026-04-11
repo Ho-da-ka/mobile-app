@@ -1,6 +1,7 @@
 import { request } from '@/api/http'
 import { clearAuth, setAuth } from '@/store/auth'
 import type { RoleCode } from '@/types/api'
+import { encryptLoginPassword } from '@/utils/loginCrypto'
 
 interface PingData {
   service: string
@@ -26,12 +27,14 @@ export async function verifyPublicPing(): Promise<PingData> {
 }
 
 export async function loginWithJwt(username: string, password: string): Promise<AuthTokenData> {
+  const encryptedPayload = encryptLoginPassword(password)
   const authData = await request<AuthTokenData>({
     url: '/api/v1/auth/login',
     method: 'POST',
     data: {
       username,
-      password
+      encryptedPassword: encryptedPayload.encryptedPassword,
+      iv: encryptedPayload.iv
     },
     skipAuth: true
   })
