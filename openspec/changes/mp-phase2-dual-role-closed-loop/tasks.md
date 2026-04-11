@@ -1,17 +1,17 @@
-﻿## 1. 后端数据模型与迁移
+## 1. 后端数据模型与迁移
 
-- [ ] 1.1 parent_account
-- [ ] 1.2 parent_student_relation
-- [ ] 1.3 course_booking
-- [ ] 1.4 in_app_message
-- [ ] 1.5 refresh token 持久化
+- [x] 1.1 parent_account
+- [x] 1.2 parent_student_relation
+- [x] 1.3 course_booking
+- [x] 1.4 in_app_message
+- [x] 1.5 refresh token 持久化
 
 ## 2. JWT 认证
 
-- [ ] 2.1 login
-- [ ] 2.2 refresh
-- [ ] 2.3 logout
-- [ ] 2.4 JWT 鉴权中间件
+- [x] 2.1 login
+- [x] 2.2 refresh
+- [x] 2.3 logout
+- [x] 2.4 JWT 鉴权中间件
 
 ## 3. 家长侧接口
 
@@ -30,5 +30,5 @@
 
 ## 5. 联调与回归
 
-- [ ] 5.1 家长侧全链路联调
-- [ ] 5.2 管理侧无回归
+- [x] 5.1 家长侧全链路联调
+- [x] 5.2 管理侧无回归
