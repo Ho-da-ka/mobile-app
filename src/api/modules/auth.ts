@@ -1,7 +1,7 @@
 import { request } from '@/api/http'
 import { clearAuth, setAuth } from '@/store/auth'
 import type { RoleCode } from '@/types/api'
-import { encryptLoginPassword } from '@/utils/loginCrypto'
+import CryptoJS from 'crypto-js'
 
 interface PingData {
   service: string
@@ -16,6 +16,32 @@ export interface AuthTokenData {
   refreshToken: string
   username: string
   role: RoleCode
+}
+
+const LOGIN_AES_KEY = import.meta.env.VITE_LOGIN_AES_KEY || 'ZFLoginCryptoKey2026ForDemo12345'
+
+function buildIvWordArray() {
+  const bytes = new Array<number>(16)
+  for (let i = 0; i < 16; i += 1) {
+    bytes[i] = Math.floor(Math.random() * 256)
+  }
+  const ivHex = bytes.map((item) => item.toString(16).padStart(2, '0')).join('')
+  return CryptoJS.enc.Hex.parse(ivHex)
+}
+
+function encryptLoginPassword(password: string): { encryptedPassword: string; iv: string } {
+  const iv = buildIvWordArray()
+  const key = CryptoJS.enc.Utf8.parse(LOGIN_AES_KEY)
+  const encrypted = CryptoJS.AES.encrypt(password, key, {
+    iv,
+    mode: CryptoJS.mode.CBC,
+    padding: CryptoJS.pad.Pkcs7
+  })
+
+  return {
+    encryptedPassword: CryptoJS.enc.Base64.stringify(encrypted.ciphertext),
+    iv: CryptoJS.enc.Base64.stringify(iv)
+  }
 }
 
 export async function verifyPublicPing(): Promise<PingData> {

@@ -8,6 +8,11 @@ export const studentStatusOptions = [
   { label: '停训', value: 'INACTIVE' }
 ] as const
 
+export const coachStatusOptions = [
+  { label: '在职', value: 'ACTIVE' },
+  { label: '停用', value: 'INACTIVE' }
+] as const
+
 export const courseStatusOptions = [
   { label: '待开课', value: 'PLANNED' },
   { label: '进行中', value: 'ONGOING' },

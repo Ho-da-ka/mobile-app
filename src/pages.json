@@ -62,6 +62,18 @@
       }
     },
     {
+      "path": "pages/admin/coaches/detail",
+      "style": {
+        "navigationBarTitleText": "教练详情"
+      }
+    },
+    {
+      "path": "pages/admin/coaches/form",
+      "style": {
+        "navigationBarTitleText": "教练表单"
+      }
+    },
+    {
       "path": "pages/admin/attendances/list",
       "style": {
         "navigationBarTitleText": "考勤管理"

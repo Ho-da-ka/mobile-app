@@ -19,7 +19,7 @@
             placeholder="请输入密码"
           />
           <view class="toggle-password" @click="togglePassword">
-            {{ showPassword ? '隐藏' : '显示' }}
+            <u-icon :name="showPassword ? 'eye-off' : 'eye'" color="#6b7280" size="34rpx" />
           </view>
         </view>
       </view>
@@ -105,8 +105,12 @@ async function handleLogin() {
   right: 24rpx;
   top: 50%;
   transform: translateY(-50%);
-  color: #0f766e;
-  font-size: 24rpx;
+  width: 56rpx;
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 28rpx;
 }
 
 .tip {
