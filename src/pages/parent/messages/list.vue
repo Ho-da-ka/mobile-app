@@ -2,7 +2,10 @@
   <view class="page">
     <view class="card row between">
       <view class="title" style="font-size: 30rpx">站内消息</view>
-      <u-button size="small" type="primary" text="刷新" @click="fetchMessages" />
+      <view class="row gap">
+        <u-button size="small" text="成长总览" @click="goGrowth" />
+        <u-button size="small" type="primary" text="刷新" @click="fetchMessages" />
+      </view>
     </view>
 
     <view v-if="loading" class="card">加载中...</view>
@@ -27,12 +30,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
-import { listParentMessages, readParentMessage, type ParentMessage } from '@/api/modules/parent'
+import { listParentChildren, listParentMessages, readParentMessage, type ParentMessage } from '@/api/modules/parent'
 import { isLoggedIn } from '@/store/auth'
 import { showError, showSuccess } from '@/utils/error'
 
 const loading = ref(false)
 const messages = ref<ParentMessage[]>([])
+const primaryChildId = ref<number | null>(null)
 
 function ensureLogin() {
   if (!isLoggedIn()) {
@@ -51,12 +55,25 @@ async function fetchMessages() {
   if (!ensureLogin()) return
   loading.value = true
   try {
-    messages.value = await listParentMessages()
+    const [messageList, children] = await Promise.all([
+      listParentMessages(),
+      listParentChildren()
+    ])
+    messages.value = messageList
+    primaryChildId.value = children[0]?.id ?? null
   } catch (error) {
     showError(error, '消息获取失败')
   } finally {
     loading.value = false
   }
+}
+
+function goGrowth() {
+  if (!primaryChildId.value) {
+    uni.showToast({ title: '请先绑定孩子', icon: 'none' })
+    return
+  }
+  uni.navigateTo({ url: `/pages/parent/growth/index?studentId=${primaryChildId.value}` })
 }
 
 async function handleRead(id: number) {

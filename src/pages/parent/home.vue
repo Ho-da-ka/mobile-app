@@ -37,6 +37,7 @@
         <u-button text="预约记录" @click="goBookings" />
         <u-button text="签到记录" @click="goCheckins" />
         <u-button text="体测记录" @click="goFitness" />
+        <u-button text="成长总览" @click="goGrowth" />
         <u-button text="站内消息" @click="goMessages" />
       </view>
     </view>
@@ -44,7 +45,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { logout } from '@/api/modules/auth'
 import { listParentBookings, listParentChildren, listParentCourses, listParentMessages } from '@/api/modules/parent'
@@ -57,6 +58,7 @@ const stats = reactive({
   bookings: 0,
   unreadMessages: 0
 })
+const primaryChildId = ref<number | null>(null)
 
 function ensureLogin() {
   if (!isLoggedIn()) {
@@ -79,6 +81,7 @@ async function refreshSummary() {
     stats.courses = courses.length
     stats.bookings = bookings.length
     stats.unreadMessages = messages.filter(item => !item.read).length
+    primaryChildId.value = children[0]?.id ?? null
   } catch (error) {
     showError(error, '首页数据获取失败')
   }
@@ -102,6 +105,14 @@ function goCheckins() {
 
 function goFitness() {
   uni.navigateTo({ url: '/pages/parent/fitness/list' })
+}
+
+function goGrowth() {
+  if (!primaryChildId.value) {
+    uni.showToast({ title: '请先绑定孩子', icon: 'none' })
+    return
+  }
+  uni.navigateTo({ url: `/pages/parent/growth/index?studentId=${primaryChildId.value}` })
 }
 
 function goMessages() {

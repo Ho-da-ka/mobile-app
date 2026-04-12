@@ -180,6 +180,12 @@
       "style": {
         "navigationBarTitleText": "站内消息"
       }
+    },
+    {
+      "path": "pages/parent/growth/index",
+      "style": {
+        "navigationBarTitleText": "成长总览"
+      }
     }
   ],
   "globalStyle": {
