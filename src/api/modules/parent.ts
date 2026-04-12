@@ -1,5 +1,11 @@
 import { request } from '@/api/http'
-import type { AttendanceRecord, CourseStatus, FitnessTestRecord, StudentStatus } from '@/types/parent'
+import type {
+  AttendanceRecord,
+  CourseStatus,
+  FitnessTestRecord,
+  ParentGrowthOverview,
+  StudentStatus
+} from '@/types/parent'
 
 export interface ParentChild {
   id: number
@@ -137,5 +143,12 @@ export function readParentMessage(id: number): Promise<ParentMessage> {
   return request<ParentMessage>({
     url: `/api/v1/parent/messages/${id}/read`,
     method: 'POST'
+  })
+}
+
+export function getParentGrowthOverview(studentId: number): Promise<ParentGrowthOverview> {
+  return request<ParentGrowthOverview>({
+    url: `/api/v1/parent/growth-overview?studentId=${studentId}`,
+    method: 'GET'
   })
 }
