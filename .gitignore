@@ -1,6 +1,7 @@
 ﻿node_modules/
 .uni/
 dist/
+.worktrees/
 .DS_Store
 *.log
 .npm-cache/
