@@ -65,14 +65,26 @@ function isFutureCourseStart(value?: string, now: Date = new Date()): boolean {
   return time != null && time > now.getTime()
 }
 
-function getCourseStartTime(booking: ParentHomeBooking, courses: ParentHomeCourse[]): string | undefined {
-  const matchedCourse = courses.find((course) => course.id === booking.courseId)
-  return matchedCourse?.startTime || booking.createdAt
+function getCourseStartTime(
+  booking: ParentHomeBooking,
+  courseStartLookup: Map<number, string>
+): string | undefined {
+  return courseStartLookup.get(booking.courseId) || booking.createdAt
+}
+
+function buildCourseStartLookup(courses: ParentHomeCourse[]): Map<number, string> {
+  const lookup = new Map<number, string>()
+  courses.forEach((course) => {
+    if (course.startTime) {
+      lookup.set(course.id, course.startTime)
+    }
+  })
+  return lookup
 }
 
 function getWeekAttendance(
   bookings: ParentHomeBooking[],
-  courses: ParentHomeCourse[],
+  courseStartLookup: Map<number, string>,
   childId: number,
   now: Date = new Date()
 ): string {
@@ -80,7 +92,7 @@ function getWeekAttendance(
     (item) =>
       item.studentId === childId &&
       item.bookingStatus === 'BOOKED' &&
-      isCurrentWeek(getCourseStartTime(item, courses), now)
+      isCurrentWeek(getCourseStartTime(item, courseStartLookup), now)
   )
 
   if (!currentWeekBookings.length) return '暂无记录'
@@ -104,7 +116,7 @@ function getLatestFitnessSignal(fitnessRecords: ParentHomeFitnessRecord[]): { va
 function buildTodoSummary(
   messages: ParentHomeMessage[],
   bookings: ParentHomeBooking[],
-  courses: ParentHomeCourse[],
+  courseStartLookup: Map<number, string>,
   childId: number,
   now: Date = new Date()
 ): { value: string; hint: string; summary: string } {
@@ -114,7 +126,7 @@ function buildTodoSummary(
       item.studentId === childId &&
       item.bookingStatus === 'BOOKED' &&
       item.checkinStatus === 'PENDING' &&
-      isCurrentWeek(getCourseStartTime(item, courses), now)
+      isCurrentWeek(getCourseStartTime(item, courseStartLookup), now)
   ).length
 
   const details: string[] = []
@@ -227,6 +239,7 @@ export function resolveCurrentParentStudentId(
 export function buildParentHomeDashboard(input: ParentHomeDashboardInput): ParentHomeDashboard {
   const now = new Date()
   const unreadCount = input.messages.filter((item) => !item.read).length
+  const courseStartLookup = buildCourseStartLookup(input.courses)
   const secondaryActions = SECONDARY_ACTIONS.map((item) => {
     if (item.key === 'messages' && unreadCount > 0) {
       return {
@@ -273,14 +286,14 @@ export function buildParentHomeDashboard(input: ParentHomeDashboardInput): Paren
   }
 
   const latestFitness = getLatestFitnessSignal(input.fitnessRecords)
-  const todoState = buildTodoSummary(input.messages, input.bookings, input.courses, input.child.id, now)
+  const todoState = buildTodoSummary(input.messages, input.bookings, courseStartLookup, input.child.id, now)
   const latestUpdate = buildLatestUpdate(input)
 
   const metrics: ParentHomeMetric[] = [
     {
       key: 'attendance',
       label: '本周出勤',
-      value: getWeekAttendance(input.bookings, input.courses, input.child.id, now),
+      value: getWeekAttendance(input.bookings, courseStartLookup, input.child.id, now),
       hint: '优先按本周已预约与签到状态汇总',
       tone: 'teal'
     },

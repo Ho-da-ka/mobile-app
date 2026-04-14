@@ -54,7 +54,7 @@ describe('child selection persistence', () => {
 })
 
 describe('buildParentHomeDashboard', () => {
-  it('filters week-based attendance and pending checkins to the current week only', () => {
+  it('filters week-based attendance and pending checkins by course start time with fallback', () => {
     const dashboard = buildParentHomeDashboard({
       child: {
         id: 11,
@@ -74,11 +74,11 @@ describe('buildParentHomeDashboard', () => {
           studentId: 11,
           studentName: '乐乐',
           courseId: 100,
-          courseName: '旧课程',
+          courseName: '周中课程',
           bookingStatus: 'BOOKED',
           courseCapacity: 20,
           bookingRemark: '',
-          checkinStatus: 'PENDING',
+          checkinStatus: 'CHECKED_IN',
           createdAt: '2026-04-06T08:00:00'
         },
         {
@@ -86,30 +86,30 @@ describe('buildParentHomeDashboard', () => {
           studentId: 11,
           studentName: '乐乐',
           courseId: 101,
-          courseName: '周中课程',
+          courseName: '下周课程',
           bookingStatus: 'BOOKED',
           courseCapacity: 20,
           bookingRemark: '',
-          checkinStatus: 'CHECKED_IN',
-          createdAt: '2026-04-13T08:00:00'
+          checkinStatus: 'PENDING',
+          createdAt: '2026-04-14T08:00:00'
         },
         {
           id: 3,
           studentId: 11,
           studentName: '乐乐',
-          courseId: 102,
-          courseName: '本周待签到',
+          courseId: 999,
+          courseName: '缺课程',
           bookingStatus: 'BOOKED',
           courseCapacity: 20,
           bookingRemark: '',
           checkinStatus: 'PENDING',
-          createdAt: '2026-04-15T08:00:00'
+          createdAt: '2026-04-13T08:00:00'
         }
       ],
       courses: [
         {
-          id: 101,
-          courseCode: 'C-101',
+          id: 100,
+          courseCode: 'C-100',
           name: '周中课程',
           courseType: 'GROUP',
           coachName: '李教练',
@@ -123,13 +123,13 @@ describe('buildParentHomeDashboard', () => {
           availableCount: 10
         },
         {
-          id: 102,
-          courseCode: 'C-102',
-          name: '本周待签到',
+          id: 101,
+          courseCode: 'C-101',
+          name: '下周课程',
           courseType: 'GROUP',
           coachName: '李教练',
           venue: 'A馆',
-          startTime: '2026-04-16T18:30:00',
+          startTime: '2026-04-22T18:30:00',
           durationMinutes: 60,
           status: 'PLANNED',
           description: '',
