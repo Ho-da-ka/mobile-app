@@ -15,11 +15,11 @@ const CURRENT_CHILD_KEY = 'zf_parent_home_student_id'
 const PRIMARY_ACTIONS: ParentHomeAction[] = [
   { key: 'courses', label: '课程预约', hint: '查看可预约课程', url: '/pages/parent/courses/list', variant: 'primary' },
   { key: 'growth', label: '成长总览', hint: '查看阶段表现', url: '/pages/parent/growth/index', variant: 'primary' },
+  { key: 'checkin', label: '签到记录', hint: '查看到课情况', url: '/pages/parent/checkin/list', variant: 'primary' },
   { key: 'children', label: '我的孩子', hint: '切换孩子档案', url: '/pages/parent/children/list', variant: 'primary' }
 ]
 
 const SECONDARY_ACTIONS: ParentHomeAction[] = [
-  { key: 'checkin', label: '签到记录', hint: '查看到课情况', url: '/pages/parent/checkin/list', variant: 'secondary' },
   { key: 'fitness', label: '体测记录', hint: '查看最新体测', url: '/pages/parent/fitness/list', variant: 'secondary' },
   { key: 'bookings', label: '预约记录', hint: '查看预约状态', url: '/pages/parent/bookings/list', variant: 'secondary' },
   { key: 'messages', label: '站内消息', hint: '查看通知提醒', url: '/pages/parent/messages/list', variant: 'secondary' }
@@ -65,9 +65,22 @@ function isFutureCourseStart(value?: string, now: Date = new Date()): boolean {
   return time != null && time > now.getTime()
 }
 
-function getWeekAttendance(bookings: ParentHomeBooking[], childId: number, now: Date = new Date()): string {
+function getCourseStartTime(booking: ParentHomeBooking, courses: ParentHomeCourse[]): string | undefined {
+  const matchedCourse = courses.find((course) => course.id === booking.courseId)
+  return matchedCourse?.startTime || booking.createdAt
+}
+
+function getWeekAttendance(
+  bookings: ParentHomeBooking[],
+  courses: ParentHomeCourse[],
+  childId: number,
+  now: Date = new Date()
+): string {
   const currentWeekBookings = bookings.filter(
-    (item) => item.studentId === childId && item.bookingStatus === 'BOOKED' && isCurrentWeek(item.createdAt, now)
+    (item) =>
+      item.studentId === childId &&
+      item.bookingStatus === 'BOOKED' &&
+      isCurrentWeek(getCourseStartTime(item, courses), now)
   )
 
   if (!currentWeekBookings.length) return '暂无记录'
@@ -91,6 +104,7 @@ function getLatestFitnessSignal(fitnessRecords: ParentHomeFitnessRecord[]): { va
 function buildTodoSummary(
   messages: ParentHomeMessage[],
   bookings: ParentHomeBooking[],
+  courses: ParentHomeCourse[],
   childId: number,
   now: Date = new Date()
 ): { value: string; hint: string; summary: string } {
@@ -100,7 +114,7 @@ function buildTodoSummary(
       item.studentId === childId &&
       item.bookingStatus === 'BOOKED' &&
       item.checkinStatus === 'PENDING' &&
-      isCurrentWeek(item.createdAt, now)
+      isCurrentWeek(getCourseStartTime(item, courses), now)
   ).length
 
   const details: string[] = []
@@ -213,6 +227,15 @@ export function resolveCurrentParentStudentId(
 export function buildParentHomeDashboard(input: ParentHomeDashboardInput): ParentHomeDashboard {
   const now = new Date()
   const unreadCount = input.messages.filter((item) => !item.read).length
+  const secondaryActions = SECONDARY_ACTIONS.map((item) => {
+    if (item.key === 'messages' && unreadCount > 0) {
+      return {
+        ...item,
+        badge: String(unreadCount)
+      }
+    }
+    return item
+  })
 
   if (!input.child) {
     return {
@@ -225,7 +248,7 @@ export function buildParentHomeDashboard(input: ParentHomeDashboardInput): Paren
       },
       metrics: [],
       primaryActions: PRIMARY_ACTIONS,
-      secondaryActions: SECONDARY_ACTIONS,
+      secondaryActions,
       latestUpdate: {
         title: '最近动态',
         summary: '绑定孩子后，这里会显示最近训练反馈和阶段评估。',
@@ -250,14 +273,14 @@ export function buildParentHomeDashboard(input: ParentHomeDashboardInput): Paren
   }
 
   const latestFitness = getLatestFitnessSignal(input.fitnessRecords)
-  const todoState = buildTodoSummary(input.messages, input.bookings, input.child.id, now)
+  const todoState = buildTodoSummary(input.messages, input.bookings, input.courses, input.child.id, now)
   const latestUpdate = buildLatestUpdate(input)
 
   const metrics: ParentHomeMetric[] = [
     {
       key: 'attendance',
       label: '本周出勤',
-      value: getWeekAttendance(input.bookings, input.child.id, now),
+      value: getWeekAttendance(input.bookings, input.courses, input.child.id, now),
       hint: '优先按本周已预约与签到状态汇总',
       tone: 'teal'
     },
@@ -287,7 +310,7 @@ export function buildParentHomeDashboard(input: ParentHomeDashboardInput): Paren
     },
     metrics,
     primaryActions: PRIMARY_ACTIONS,
-    secondaryActions: SECONDARY_ACTIONS,
+    secondaryActions,
     latestUpdate: {
       title: '最近动态',
       summary: latestUpdate.summary,

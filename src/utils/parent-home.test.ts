@@ -157,6 +157,30 @@ describe('buildParentHomeDashboard', () => {
     expect(dashboard.todo.summary).toContain('本周还有 1 条签到待确认')
   })
 
+  it('uses the approved quick action ordering and adds message badge for reminders', () => {
+    const dashboard = buildParentHomeDashboard({
+      child: {
+        id: 11,
+        name: '乐乐',
+        studentNo: 'S001',
+        gender: 'MALE',
+        birthDate: '2015-05-01',
+        guardianName: '张女士',
+        guardianPhone: '13800000000',
+        status: 'ACTIVE'
+      },
+      overview: null,
+      messages: [{ id: 1, title: '提醒', content: '请查看反馈', msgType: 'REMINDER', read: false, createdAt: '2026-04-13T09:00:00' }],
+      bookings: [],
+      courses: [],
+      fitnessRecords: []
+    })
+
+    expect(dashboard.primaryActions.map((item) => item.label)).toEqual(['课程预约', '成长总览', '签到记录', '我的孩子'])
+    expect(dashboard.secondaryActions.map((item) => item.label)).toEqual(['体测记录', '预约记录', '站内消息'])
+    expect(dashboard.secondaryActions.find((item) => item.key === 'messages')?.badge).toBe('1')
+  })
+
   it('chooses the nearest future booked course for hero meta and ignores past bookings', () => {
     const dashboard = buildParentHomeDashboard({
       child: {
