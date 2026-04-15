@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   buildParentHomeDashboard,
-  buildParentHomeSecondaryActions,
   readStoredParentHomeStudentId,
   resolveCurrentParentStudentId,
   writeStoredParentHomeStudentId
@@ -55,12 +54,6 @@ describe('child selection persistence', () => {
 })
 
 describe('buildParentHomeDashboard', () => {
-  it('keeps parent home message badge decoration in the utility layer', () => {
-    expect(buildParentHomeSecondaryActions(0).find((item) => item.key === 'messages')?.badge).toBeUndefined()
-    expect(buildParentHomeSecondaryActions(3).map((item) => item.label)).toEqual(['体测记录', '预约记录', '站内消息'])
-    expect(buildParentHomeSecondaryActions(3).find((item) => item.key === 'messages')?.badge).toBe('3')
-  })
-
   it('filters week-based attendance and pending checkins by course start time with fallback', () => {
     const dashboard = buildParentHomeDashboard({
       child: {
@@ -187,6 +180,30 @@ describe('buildParentHomeDashboard', () => {
     expect(dashboard.hero.unreadCount).toBe(1)
     expect(dashboard.secondaryActions.map((item) => item.label)).toEqual(['体测记录', '预约记录', '站内消息'])
     expect(dashboard.secondaryActions.find((item) => item.key === 'messages')?.badge).toBe('1')
+  })
+
+  it('leaves the message action undecorated when there are no unread reminders', () => {
+    const dashboard = buildParentHomeDashboard({
+      child: {
+        id: 11,
+        name: '乐乐',
+        studentNo: 'S001',
+        gender: 'MALE',
+        birthDate: '2015-05-01',
+        guardianName: '张女士',
+        guardianPhone: '13800000000',
+        status: 'ACTIVE'
+      },
+      overview: null,
+      messages: [],
+      bookings: [],
+      courses: [],
+      fitnessRecords: []
+    })
+
+    expect(dashboard.hero.unreadCount).toBe(0)
+    expect(dashboard.secondaryActions.map((item) => item.label)).toEqual(['体测记录', '预约记录', '站内消息'])
+    expect(dashboard.secondaryActions.find((item) => item.key === 'messages')?.badge).toBeUndefined()
   })
 
   it('chooses the nearest future booked course for hero meta and ignores past bookings', () => {
