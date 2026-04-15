@@ -62,13 +62,25 @@ describe('child selection persistence', () => {
 })
 
 describe('parent home presentation components', () => {
-  it('keeps the approved hero badge and action section source contracts', () => {
+  it('keeps the approved hero source contracts', () => {
     const heroSource = readComponentSource('ParentHomeHero.vue')
-    const actionSource = readComponentSource('ParentHomeActionSection.vue')
 
     expect(heroSource).toContain('v-if="hero.unreadCount"')
-    expect(heroSource).toContain('{{ hero.unreadCount }} 条提醒')
-    expect(actionSource).toContain('<view class="section-title">常用功能</view>')
+    expect(heroSource).toContain('class="hero-badge"')
+    expect(heroSource).toContain('{{ hero.unreadCount }}')
+    expect(heroSource).toContain('条提醒')
+    expect(heroSource).toContain('v-if="children.length > 1"')
+    expect(heroSource).toContain('@click="$emit(\'select-child\', child.id)"')
+  })
+
+  it('keeps the approved action section source contracts', () => {
+    const actionSource = readComponentSource('ParentHomeActionSection.vue')
+
+    expect(actionSource).toContain('class="section-title"')
+    expect(actionSource).toContain('常用功能')
+    expect(actionSource).toContain('class="primary-grid"')
+    expect(actionSource).toContain('class="secondary-grid"')
+    expect(actionSource).toContain('v-if="item.badge"')
   })
 })
 
