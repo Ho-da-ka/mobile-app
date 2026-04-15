@@ -85,6 +85,24 @@ describe('parent home presentation components', () => {
 })
 
 describe('buildParentHomeDashboard', () => {
+  it('returns the onboarding empty state when the parent has no bound children', () => {
+    const dashboard = buildParentHomeDashboard({
+      child: null,
+      overview: null,
+      messages: [],
+      bookings: [],
+      courses: [],
+      fitnessRecords: []
+    })
+
+    expect(dashboard.emptyState).toEqual({
+      title: '还没有绑定孩子',
+      description: '先进入“我的孩子”查看绑定信息，再回来查看成长摘要。',
+      ctaLabel: '查看我的孩子',
+      ctaUrl: '/pages/parent/children/list'
+    })
+  })
+
   it('filters week-based attendance and pending checkins by course start time with fallback', () => {
     const dashboard = buildParentHomeDashboard({
       child: {

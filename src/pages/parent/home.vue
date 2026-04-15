@@ -1,64 +1,100 @@
 <template>
-  <view class="page">
-    <view class="card">
-      <view class="title">家长端首页</view>
-      <view class="sub-title" style="margin-top: 8rpx">查看孩子、预约课程、签到与消息</view>
+  <view class="page parent-home">
+    <view v-if="loading" class="state-card">首页数据加载中...</view>
+    <view v-else-if="errorText" class="state-card">
+      <view class="state-title">首页加载失败</view>
+      <view class="state-copy">{{ errorText }}</view>
+      <u-button type="primary" text="重新加载" @click="loadHome" />
+    </view>
+    <view v-else-if="dashboard.emptyState" class="state-card">
+      <view class="state-title">{{ dashboard.emptyState.title }}</view>
+      <view class="state-copy">{{ dashboard.emptyState.description }}</view>
+      <u-button type="primary" :text="dashboard.emptyState.ctaLabel" @click="navigate(dashboard.emptyState.ctaUrl)" />
+    </view>
+    <template v-else>
+      <ParentHomeHero
+        :hero="dashboard.hero"
+        :children="children"
+        :current-student-id="currentStudentId"
+        @select-child="handleSelectChild"
+      />
 
-      <view class="stats-grid">
-        <view class="stat-item">
-          <view class="stat-label">已绑定学员</view>
-          <view class="stat-value">{{ stats.children }}</view>
-        </view>
-        <view class="stat-item">
-          <view class="stat-label">可约课程</view>
-          <view class="stat-value">{{ stats.courses }}</view>
-        </view>
-        <view class="stat-item">
-          <view class="stat-label">预约记录</view>
-          <view class="stat-value">{{ stats.bookings }}</view>
-        </view>
-        <view class="stat-item">
-          <view class="stat-label">未读消息</view>
-          <view class="stat-value">{{ stats.unreadMessages }}</view>
-        </view>
-      </view>
+      <ParentHomeMetricGrid class="section-gap" :metrics="dashboard.metrics" />
 
-      <view class="row gap" style="margin-top: 16rpx">
-        <u-button type="primary" text="刷新数据" @click="refreshSummary" />
+      <ParentHomeActionSection
+        class="section-gap"
+        :primary-actions="dashboard.primaryActions"
+        :secondary-actions="dashboard.secondaryActions"
+        @navigate="navigate"
+      />
+
+      <ParentHomeActivityCard
+        class="section-gap"
+        :title="dashboard.latestUpdate.title"
+        :summary="dashboard.latestUpdate.summary"
+        :caption="dashboard.latestUpdate.caption"
+        :cta-label="dashboard.latestUpdate.ctaLabel"
+        :cta-url="dashboard.latestUpdate.ctaUrl"
+        @navigate="navigate"
+      />
+
+      <ParentHomeActivityCard
+        class="section-gap"
+        :title="dashboard.todo.title"
+        :summary="dashboard.todo.summary"
+        :caption="dashboard.todo.caption"
+        :cta-label="dashboard.todo.ctaLabel"
+        :cta-url="dashboard.todo.ctaUrl"
+        @navigate="navigate"
+      />
+
+      <view class="section-gap footer-actions">
+        <u-button type="primary" text="刷新首页" @click="loadHome" />
         <u-button text="退出登录" @click="handleLogout" />
       </view>
-    </view>
-
-    <view class="card">
-      <view class="title" style="font-size: 30rpx">常用功能</view>
-      <view class="actions-grid">
-        <u-button type="primary" text="我的孩子" @click="goChildren" />
-        <u-button type="success" text="课程预约" @click="goCourses" />
-        <u-button text="预约记录" @click="goBookings" />
-        <u-button text="签到记录" @click="goCheckins" />
-        <u-button text="体测记录" @click="goFitness" />
-        <u-button text="成长总览" @click="goGrowth" />
-        <u-button text="站内消息" @click="goMessages" />
-      </view>
-    </view>
+    </template>
   </view>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { logout } from '@/api/modules/auth'
-import { listParentBookings, listParentChildren, listParentCourses, listParentMessages } from '@/api/modules/parent'
+import {
+  getParentGrowthOverview,
+  listParentBookings,
+  listParentChildren,
+  listParentCourses,
+  listParentFitness,
+  listParentMessages,
+  type ParentBooking,
+  type ParentChild,
+  type ParentCourse,
+  type ParentMessage
+} from '@/api/modules/parent'
+import ParentHomeActionSection from './components/ParentHomeActionSection.vue'
+import ParentHomeActivityCard from './components/ParentHomeActivityCard.vue'
+import ParentHomeHero from './components/ParentHomeHero.vue'
+import ParentHomeMetricGrid from './components/ParentHomeMetricGrid.vue'
 import { getAuth, isLoggedIn } from '@/store/auth'
+import type { FitnessTestRecord, ParentGrowthOverview } from '@/types/parent'
+import {
+  buildParentHomeDashboard,
+  readStoredParentHomeStudentId,
+  resolveCurrentParentStudentId,
+  writeStoredParentHomeStudentId
+} from '@/utils/parent-home'
 import { showError, showSuccess } from '@/utils/error'
 
-const stats = reactive({
-  children: 0,
-  courses: 0,
-  bookings: 0,
-  unreadMessages: 0
-})
-const primaryChildId = ref<number | null>(null)
+const loading = ref(false)
+const errorText = ref('')
+const children = ref<ParentChild[]>([])
+const currentStudentId = ref<number | null>(null)
+const messages = ref<ParentMessage[]>([])
+const bookings = ref<ParentBooking[]>([])
+const courses = ref<ParentCourse[]>([])
+const fitnessRecords = ref<FitnessTestRecord[]>([])
+const overview = ref<ParentGrowthOverview | null>(null)
 
 function ensureLogin() {
   if (!isLoggedIn()) {
@@ -68,61 +104,69 @@ function ensureLogin() {
   return true
 }
 
-async function refreshSummary() {
+const currentChild = computed(() => children.value.find((item) => item.id === currentStudentId.value) || null)
+
+const dashboard = computed(() =>
+  buildParentHomeDashboard({
+    child: currentChild.value,
+    overview: overview.value,
+    messages: messages.value,
+    bookings: bookings.value,
+    courses: courses.value,
+    fitnessRecords: fitnessRecords.value
+  })
+)
+
+async function loadHome(preferredStudentId?: number | null) {
   if (!ensureLogin()) return
+
+  loading.value = true
+  errorText.value = ''
+
   try {
-    const [children, courses, bookings, messages] = await Promise.all([
-      listParentChildren(),
-      listParentCourses(),
+    const childList = await listParentChildren()
+    children.value = childList
+
+    const resolvedId = resolveCurrentParentStudentId(childList, preferredStudentId ?? readStoredParentHomeStudentId())
+    currentStudentId.value = resolvedId
+
+    if (resolvedId) {
+      writeStoredParentHomeStudentId(resolvedId)
+    }
+
+    const [messageRows, bookingRows, courseRows, fitnessRows, growth] = await Promise.all([
+      listParentMessages(),
       listParentBookings(),
-      listParentMessages()
+      listParentCourses(),
+      resolvedId ? listParentFitness(resolvedId) : Promise.resolve([]),
+      resolvedId ? getParentGrowthOverview(resolvedId) : Promise.resolve(null)
     ])
-    stats.children = children.length
-    stats.courses = courses.length
-    stats.bookings = bookings.length
-    stats.unreadMessages = messages.filter(item => !item.read).length
-    primaryChildId.value = children[0]?.id ?? null
+
+    messages.value = messageRows
+    bookings.value = bookingRows
+    courses.value = courseRows
+    fitnessRecords.value = fitnessRows
+    overview.value = growth
   } catch (error) {
-    showError(error, '首页数据获取失败')
+    errorText.value = '请检查网络后重试，首页其他功能稍后仍可从菜单进入。'
+    showError(error, '家长首页加载失败')
+  } finally {
+    loading.value = false
   }
 }
 
-function goChildren() {
-  uni.navigateTo({ url: '/pages/parent/children/list' })
+function navigate(url: string) {
+  uni.navigateTo({ url })
 }
 
-function goCourses() {
-  uni.navigateTo({ url: '/pages/parent/courses/list' })
-}
-
-function goBookings() {
-  uni.navigateTo({ url: '/pages/parent/bookings/list' })
-}
-
-function goCheckins() {
-  uni.navigateTo({ url: '/pages/parent/checkin/list' })
-}
-
-function goFitness() {
-  uni.navigateTo({ url: '/pages/parent/fitness/list' })
-}
-
-function goGrowth() {
-  if (!primaryChildId.value) {
-    uni.showToast({ title: '请先绑定孩子', icon: 'none' })
-    return
-  }
-  uni.navigateTo({ url: `/pages/parent/growth/index?studentId=${primaryChildId.value}` })
-}
-
-function goMessages() {
-  uni.navigateTo({ url: '/pages/parent/messages/list' })
+function handleSelectChild(studentId: number) {
+  if (studentId === currentStudentId.value) return
+  loadHome(studentId)
 }
 
 async function handleLogout() {
   try {
-    const refreshToken = getAuth()?.refreshToken
-    await logout(refreshToken)
+    await logout(getAuth()?.refreshToken)
     showSuccess('已退出登录')
   } catch (error) {
     showError(error, '退出登录失败')
@@ -132,50 +176,51 @@ async function handleLogout() {
 }
 
 onLoad(() => {
-  if (ensureLogin()) {
-    refreshSummary()
-  }
+  loadHome()
 })
 
 onShow(() => {
   if (ensureLogin()) {
-    refreshSummary()
+    loadHome(currentStudentId.value)
   }
 })
 </script>
 
 <style scoped lang="scss">
-.stats-grid {
-  margin-top: 18rpx;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12rpx;
+.parent-home {
+  min-height: 100vh;
+  padding: 24rpx 24rpx 40rpx;
+  background:
+    radial-gradient(circle at top right, rgba(14, 165, 233, 0.08), transparent 32%),
+    linear-gradient(180deg, #f4fbf8 0%, #f5f7fb 42%, #eef4ff 100%);
 }
 
-.stat-item {
-  border: 1rpx solid #e5e7eb;
-  border-radius: 12rpx;
-  background: #f8fafc;
-  padding: 16rpx;
+.section-gap {
+  margin-top: 20rpx;
 }
 
-.stat-label {
-  font-size: 24rpx;
-  color: #6b7280;
+.state-card {
+  background: #ffffff;
+  border-radius: 24rpx;
+  padding: 32rpx 28rpx;
+  box-shadow: 0 12rpx 32rpx rgba(15, 23, 42, 0.06);
 }
 
-.stat-value {
-  margin-top: 8rpx;
-  font-size: 36rpx;
+.state-title {
+  font-size: 34rpx;
   font-weight: 700;
-  color: #111827;
+  color: #0f172a;
 }
 
-.actions-grid {
-  margin-top: 16rpx;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12rpx;
+.state-copy {
+  margin: 12rpx 0 24rpx;
+  font-size: 26rpx;
+  line-height: 1.6;
+  color: #64748b;
+}
+
+.footer-actions {
+  display: flex;
+  gap: 16rpx;
 }
 </style>
-
