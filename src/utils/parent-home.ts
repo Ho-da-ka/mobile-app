@@ -29,6 +29,19 @@ function getStorageApi() {
   return uni
 }
 
+export function buildParentHomeSecondaryActions(unreadCount: number): ParentHomeAction[] {
+  return SECONDARY_ACTIONS.map((item) => {
+    if (item.key === 'messages' && unreadCount > 0) {
+      return {
+        ...item,
+        badge: String(unreadCount)
+      }
+    }
+
+    return item
+  })
+}
+
 function formatDateTime(value?: string): string {
   if (!value) return '暂无近期课程'
   return value.replace('T', ' ').slice(0, 16)
@@ -240,15 +253,7 @@ export function buildParentHomeDashboard(input: ParentHomeDashboardInput): Paren
   const now = new Date()
   const unreadCount = input.messages.filter((item) => !item.read).length
   const courseStartLookup = buildCourseStartLookup(input.courses)
-  const secondaryActions = SECONDARY_ACTIONS.map((item) => {
-    if (item.key === 'messages' && unreadCount > 0) {
-      return {
-        ...item,
-        badge: String(unreadCount)
-      }
-    }
-    return item
-  })
+  const secondaryActions = buildParentHomeSecondaryActions(unreadCount)
 
   if (!input.child) {
     return {

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   buildParentHomeDashboard,
+  buildParentHomeSecondaryActions,
   readStoredParentHomeStudentId,
   resolveCurrentParentStudentId,
   writeStoredParentHomeStudentId
@@ -54,6 +55,12 @@ describe('child selection persistence', () => {
 })
 
 describe('buildParentHomeDashboard', () => {
+  it('keeps parent home message badge decoration in the utility layer', () => {
+    expect(buildParentHomeSecondaryActions(0).find((item) => item.key === 'messages')?.badge).toBeUndefined()
+    expect(buildParentHomeSecondaryActions(3).map((item) => item.label)).toEqual(['体测记录', '预约记录', '站内消息'])
+    expect(buildParentHomeSecondaryActions(3).find((item) => item.key === 'messages')?.badge).toBe('3')
+  })
+
   it('filters week-based attendance and pending checkins by course start time with fallback', () => {
     const dashboard = buildParentHomeDashboard({
       child: {
@@ -177,6 +184,7 @@ describe('buildParentHomeDashboard', () => {
     })
 
     expect(dashboard.primaryActions.map((item) => item.label)).toEqual(['课程预约', '成长总览', '签到记录', '我的孩子'])
+    expect(dashboard.hero.unreadCount).toBe(1)
     expect(dashboard.secondaryActions.map((item) => item.label)).toEqual(['体测记录', '预约记录', '站内消息'])
     expect(dashboard.secondaryActions.find((item) => item.key === 'messages')?.badge).toBe('1')
   })
