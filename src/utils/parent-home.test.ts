@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   buildParentHomeDashboard,
@@ -7,6 +10,11 @@ import {
 } from './parent-home'
 
 const storage = new Map<string, string>()
+const componentDir = resolve(dirname(fileURLToPath(import.meta.url)), '../pages/parent/components')
+
+function readComponentSource(filename: string): string {
+  return readFileSync(resolve(componentDir, filename), 'utf8')
+}
 
 beforeEach(() => {
   storage.clear()
@@ -50,6 +58,17 @@ describe('child selection persistence', () => {
 
     expect(readStoredParentHomeStudentId()).toBeNull()
     expect(storage.has('zf_parent_home_student_id')).toBe(false)
+  })
+})
+
+describe('parent home presentation components', () => {
+  it('keeps the approved hero badge and action section source contracts', () => {
+    const heroSource = readComponentSource('ParentHomeHero.vue')
+    const actionSource = readComponentSource('ParentHomeActionSection.vue')
+
+    expect(heroSource).toContain('v-if="hero.unreadCount"')
+    expect(heroSource).toContain('{{ hero.unreadCount }} 条提醒')
+    expect(actionSource).toContain('<view class="section-title">常用功能</view>')
   })
 })
 
