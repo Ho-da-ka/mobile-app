@@ -7,7 +7,7 @@
         <view class="hero-status">{{ hero.status }}</view>
         <view class="hero-meta">{{ hero.meta }}</view>
       </view>
-      <view v-if="hero.unreadCount" class="hero-badge">{{ hero.unreadCount }} 条提醒</view>
+      <view class="hero-badge">{{ hero.unreadCount }} 条提醒</view>
     </view>
 
     <scroll-view v-if="children.length > 1" scroll-x class="chip-scroll">
