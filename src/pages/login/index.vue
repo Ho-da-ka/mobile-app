@@ -6,7 +6,7 @@
 
       <view style="margin-top: 28rpx">
         <view class="required">用户名</view>
-        <input class="input" v-model="form.username" placeholder="请输入用户名" />
+        <input class="input" v-model="form.username" placeholder="管理员/教练请输入账号，家长请输入手机号" />
       </view>
 
       <view style="margin-top: 20rpx">
@@ -28,6 +28,7 @@
         <u-button type="primary" :loading="loading" text="登录并进入系统" @click="handleLogin" />
       </view>
 
+      <view class="tip">家长请使用手机号 + 密码登录；首次自动创建的家长账号初始密码为手机号后 6 位。</view>
       <view class="tip">认证方式：JWT（Bearer Token）。登录状态本地保存 7 天，超时后需重新登录。</view>
     </view>
   </view>
