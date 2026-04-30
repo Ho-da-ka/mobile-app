@@ -15,11 +15,6 @@ export interface ParentHomeAction {
   badge?: string
 }
 
-export interface ParentHomeHero {
-  selectedDate: string // YYYY-MM-DD
-  unreadCount: number
-}
-
 export interface ParentHomeTimelineItem {
   id: number
   time: string // HH:mm
@@ -108,7 +103,6 @@ export interface ParentHomeGrowthOverview {
 }
 
 export interface ParentHomeDashboard {
-  hero: ParentHomeHero
   metrics: ParentHomeMetric[]
   timeline: ParentHomeTimelineItem[]
   primaryActions: ParentHomeAction[]

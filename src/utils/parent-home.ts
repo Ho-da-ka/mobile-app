@@ -257,10 +257,6 @@ export function buildParentHomeDashboard(
 
   if (!input.child) {
     return {
-      hero: {
-        selectedDate,
-        unreadCount
-      },
       metrics: [],
       timeline: [],
       primaryActions: PRIMARY_ACTIONS,
@@ -363,10 +359,6 @@ export function buildParentHomeDashboard(
   timeline.sort((a, b) => a.time.localeCompare(b.time))
 
   return {
-    hero: {
-      selectedDate,
-      unreadCount
-    },
     metrics,
     timeline,
     primaryActions: PRIMARY_ACTIONS,

@@ -62,17 +62,6 @@ describe('child selection persistence', () => {
 })
 
 describe('parent home presentation components', () => {
-  it('keeps the approved hero source contracts', () => {
-    const heroSource = readComponentSource('ParentHomeHero.vue')
-
-    expect(heroSource).toContain('v-if="hero.unreadCount"')
-    expect(heroSource).toContain('class="hero-badge"')
-    expect(heroSource).toContain('{{ hero.unreadCount }}')
-    expect(heroSource).toContain('条提醒')
-    expect(heroSource).toContain('v-if="children.length > 1"')
-    expect(heroSource).toContain('@click="$emit(\'select-child\', child.id)"')
-  })
-
   it('keeps the approved action section source contracts', () => {
     const actionSource = readComponentSource('ParentHomeActionSection.vue')
 
@@ -226,7 +215,6 @@ describe('buildParentHomeDashboard', () => {
     })
 
     expect(dashboard.primaryActions.map((item) => item.label)).toEqual(['课程预约', '成长总览', '签到记录', '我的孩子'])
-    expect(dashboard.hero.unreadCount).toBe(1)
     expect(dashboard.secondaryActions.map((item) => item.label)).toEqual(['体测记录', '预约记录', '站内消息'])
     expect(dashboard.secondaryActions.find((item) => item.key === 'messages')?.badge).toBe('1')
   })
@@ -250,12 +238,11 @@ describe('buildParentHomeDashboard', () => {
       fitnessRecords: []
     })
 
-    expect(dashboard.hero.unreadCount).toBe(0)
     expect(dashboard.secondaryActions.map((item) => item.label)).toEqual(['体测记录', '预约记录', '站内消息'])
     expect(dashboard.secondaryActions.find((item) => item.key === 'messages')?.badge).toBeUndefined()
   })
 
-  it('chooses the nearest future booked course for hero meta and ignores past bookings', () => {
+  it('filters and sorts timeline items by selected date', () => {
     const dashboard = buildParentHomeDashboard({
       child: {
         id: 11,
@@ -287,24 +274,12 @@ describe('buildParentHomeDashboard', () => {
           studentId: 11,
           studentName: '乐乐',
           courseId: 202,
-          courseName: '最早将开始',
+          courseName: '目标课程',
           bookingStatus: 'BOOKED',
           courseCapacity: 20,
           bookingRemark: '',
           checkinStatus: 'PENDING',
           createdAt: '2026-04-11T08:00:00'
-        },
-        {
-          id: 3,
-          studentId: 11,
-          studentName: '乐乐',
-          courseId: 203,
-          courseName: '更晚将开始',
-          bookingStatus: 'BOOKED',
-          courseCapacity: 20,
-          bookingRemark: '',
-          checkinStatus: 'PENDING',
-          createdAt: '2026-04-12T08:00:00'
         }
       ],
       courses: [
@@ -312,53 +287,26 @@ describe('buildParentHomeDashboard', () => {
           id: 201,
           courseCode: 'C-201',
           name: '过去课程',
-          courseType: 'GROUP',
           coachName: '李教练',
           venue: 'A馆',
           startTime: '2026-04-13T18:30:00',
-          durationMinutes: 60,
-          status: 'COMPLETED',
-          description: '',
-          capacity: 20,
-          bookedCount: 10,
           availableCount: 0
         },
         {
           id: 202,
           courseCode: 'C-202',
-          name: '最早将开始',
-          courseType: 'GROUP',
+          name: '目标课程',
           coachName: '李教练',
           venue: 'A馆',
           startTime: '2026-04-15T18:30:00',
-          durationMinutes: 60,
-          status: 'PLANNED',
-          description: '',
-          capacity: 20,
-          bookedCount: 10,
-          availableCount: 10
-        },
-        {
-          id: 203,
-          courseCode: 'C-203',
-          name: '更晚将开始',
-          courseType: 'GROUP',
-          coachName: '李教练',
-          venue: 'A馆',
-          startTime: '2026-04-16T18:30:00',
-          durationMinutes: 60,
-          status: 'PLANNED',
-          description: '',
-          capacity: 20,
-          bookedCount: 10,
           availableCount: 10
         }
       ],
       fitnessRecords: []
     }, '2026-04-15')
 
-    expect(dashboard.hero.selectedDate).toBe('2026-04-15')
-    expect(dashboard.timeline[0].title).toBe('最早将开始')
+    expect(dashboard.timeline).toHaveLength(1)
+    expect(dashboard.timeline[0].title).toBe('目标课程')
     expect(dashboard.timeline[0].time).toBe('18:30')
   })
 
@@ -395,22 +343,15 @@ describe('buildParentHomeDashboard', () => {
           id: 301,
           courseCode: 'C-301',
           name: '最近可约',
-          courseType: 'GROUP',
           coachName: '李教练',
           venue: 'A馆',
           startTime: '2026-04-15T18:30:00',
-          durationMinutes: 60,
-          status: 'PLANNED',
-          description: '',
-          capacity: 20,
-          bookedCount: 10,
           availableCount: 10
         }
       ],
       fitnessRecords: []
     }, '2026-04-14')
 
-    expect(dashboard.hero.selectedDate).toBe('2026-04-14')
     expect(dashboard.timeline).toHaveLength(0)
   })
 })
