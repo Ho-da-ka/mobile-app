@@ -355,12 +355,14 @@ describe('buildParentHomeDashboard', () => {
         }
       ],
       fitnessRecords: []
-    })
+    }, '2026-04-15')
 
-    expect(dashboard.hero.meta).toContain('2026-04-15 18:30')
+    expect(dashboard.hero.selectedDate).toBe('2026-04-15')
+    expect(dashboard.timeline[0].title).toBe('最早将开始')
+    expect(dashboard.timeline[0].time).toBe('18:30')
   })
 
-  it('falls back to the nearest available course when no future booked course exists', () => {
+  it('falls back to empty timeline when no booked course exists for selected date', () => {
     const dashboard = buildParentHomeDashboard({
       child: {
         id: 11,
@@ -403,26 +405,12 @@ describe('buildParentHomeDashboard', () => {
           capacity: 20,
           bookedCount: 10,
           availableCount: 10
-        },
-        {
-          id: 302,
-          courseCode: 'C-302',
-          name: '更晚可约',
-          courseType: 'GROUP',
-          coachName: '李教练',
-          venue: 'A馆',
-          startTime: '2026-04-16T18:30:00',
-          durationMinutes: 60,
-          status: 'PLANNED',
-          description: '',
-          capacity: 20,
-          bookedCount: 10,
-          availableCount: 10
         }
       ],
       fitnessRecords: []
-    })
+    }, '2026-04-14')
 
-    expect(dashboard.hero.meta).toContain('2026-04-15 18:30')
+    expect(dashboard.hero.selectedDate).toBe('2026-04-14')
+    expect(dashboard.timeline).toHaveLength(0)
   })
 })

@@ -236,7 +236,10 @@ export function resolveCurrentParentStudentId(
   return children[0].id
 }
 
-export function buildParentHomeDashboard(input: ParentHomeDashboardInput): ParentHomeDashboard {
+export function buildParentHomeDashboard(
+  input: ParentHomeDashboardInput,
+  selectedDate: string = new Date().toISOString().split('T')[0]
+): ParentHomeDashboard {
   const now = new Date()
   const unreadCount = input.messages.filter((item) => !item.read).length
   const courseStartLookup = buildCourseStartLookup(input.courses)
@@ -255,13 +258,11 @@ export function buildParentHomeDashboard(input: ParentHomeDashboardInput): Paren
   if (!input.child) {
     return {
       hero: {
-        label: '家长首页',
-        title: '先绑定孩子',
-        status: '绑定后即可查看成长摘要与快捷入口',
-        meta: '当前没有可展示的孩子档案',
+        selectedDate,
         unreadCount
       },
       metrics: [],
+      timeline: [],
       primaryActions: PRIMARY_ACTIONS,
       secondaryActions,
       latestUpdate: {
@@ -287,15 +288,16 @@ export function buildParentHomeDashboard(input: ParentHomeDashboardInput): Paren
     }
   }
 
+  const studentId = input.child.id
   const latestFitness = getLatestFitnessSignal(input.fitnessRecords)
-  const todoState = buildTodoSummary(input.messages, input.bookings, courseStartLookup, input.child.id, now)
+  const todoState = buildTodoSummary(input.messages, input.bookings, courseStartLookup, studentId, now)
   const latestUpdate = buildLatestUpdate(input)
 
   const metrics: ParentHomeMetric[] = [
     {
       key: 'attendance',
       label: '本周出勤',
-      value: getWeekAttendance(input.bookings, courseStartLookup, input.child.id, now),
+      value: getWeekAttendance(input.bookings, courseStartLookup, studentId, now),
       hint: '优先按本周已预约与签到状态汇总',
       tone: 'teal'
     },
@@ -315,15 +317,58 @@ export function buildParentHomeDashboard(input: ParentHomeDashboardInput): Paren
     }
   ]
 
+  // Timeline processing logic
+  const timeline: import('@/types/parent-home').ParentHomeTimelineItem[] = []
+  
+  // Filter bookings for this child and this date
+  const dayBookings = input.bookings.filter(booking => {
+    if (booking.studentId !== studentId || booking.bookingStatus !== 'BOOKED') return false
+    const startTime = getCourseStartTime(booking, courseStartLookup)
+    return startTime && startTime.startsWith(selectedDate)
+  })
+
+  dayBookings.forEach(booking => {
+    const startTimeStr = getCourseStartTime(booking, courseStartLookup)
+    if (!startTimeStr) return
+    
+    const startTime = new Date(startTimeStr)
+    const endTime = new Date(startTime.getTime() + 90 * 60 * 1000) // Assume 90 min duration
+    const currentTime = now.getTime()
+    
+    let status: 'past' | 'upcoming' | 'ongoing' = 'upcoming'
+    if (currentTime > endTime.getTime()) {
+      status = 'past'
+    } else if (currentTime >= startTime.getTime() && currentTime <= endTime.getTime()) {
+      status = 'ongoing'
+    }
+
+    let reportUrl: string | undefined = undefined
+    if (status === 'past' && booking.checkinStatus === 'CHECKED_IN') {
+      reportUrl = `/pages/parent/growth/index?studentId=${studentId}&courseId=${booking.courseId}`
+    }
+
+    timeline.push({
+      id: booking.courseId,
+      time: startTimeStr.includes('T') ? startTimeStr.split('T')[1].slice(0, 5) : startTimeStr.slice(11, 16),
+      date: selectedDate,
+      title: booking.courseName || '未知课程',
+      coach: (booking.coachName as string) || '待定教练',
+      location: (booking.locationName as string) || '场馆待定',
+      status,
+      reportUrl
+    })
+  })
+
+  // Sort timeline by time
+  timeline.sort((a, b) => a.time.localeCompare(b.time))
+
   return {
     hero: {
-      label: '家长首页',
-      title: `${input.child.name} · 家庭服务首页`,
-      status: input.overview?.goalFocus?.trim() || '最近训练与提醒已汇总到首页',
-      meta: getNextCourseMeta(input.child, input.bookings, input.courses, now),
+      selectedDate,
       unreadCount
     },
     metrics,
+    timeline,
     primaryActions: PRIMARY_ACTIONS,
     secondaryActions,
     latestUpdate: {
@@ -331,14 +376,14 @@ export function buildParentHomeDashboard(input: ParentHomeDashboardInput): Paren
       summary: latestUpdate.summary,
       caption: latestUpdate.caption,
       ctaLabel: '进入成长总览',
-      ctaUrl: `/pages/parent/growth/index?studentId=${input.child.id}`
+      ctaUrl: `/pages/parent/growth/index?studentId=${studentId}`
     },
     todo: {
       title: '待处理事项',
       summary: todoState.summary,
       caption: unreadCount > 0 ? '建议优先处理消息提醒' : '建议优先查看最新训练反馈',
       ctaLabel: unreadCount > 0 ? '查看站内消息' : '查看成长总览',
-      ctaUrl: unreadCount > 0 ? '/pages/parent/messages/list' : `/pages/parent/growth/index?studentId=${input.child.id}`
+      ctaUrl: unreadCount > 0 ? '/pages/parent/messages/list' : `/pages/parent/growth/index?studentId=${studentId}`
     },
     emptyState: null
   }

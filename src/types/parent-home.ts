@@ -16,11 +16,19 @@ export interface ParentHomeAction {
 }
 
 export interface ParentHomeHero {
-  label: string
-  title: string
-  status: string
-  meta: string
+  selectedDate: string // YYYY-MM-DD
   unreadCount: number
+}
+
+export interface ParentHomeTimelineItem {
+  id: number
+  time: string // HH:mm
+  date: string // YYYY-MM-DD
+  title: string
+  coach: string
+  location: string
+  status: 'past' | 'upcoming' | 'ongoing'
+  reportUrl?: string // 课后反馈报告链接
 }
 
 export interface ParentHomeActivity {
@@ -48,6 +56,8 @@ export interface ParentHomeBooking {
   studentId: number
   courseId: number
   courseName: string
+  coachName?: string
+  locationName?: string
   bookingStatus: 'BOOKED' | 'CANCELED'
   checkinStatus: 'PENDING' | 'CHECKED_IN'
   createdAt?: string
@@ -100,6 +110,7 @@ export interface ParentHomeGrowthOverview {
 export interface ParentHomeDashboard {
   hero: ParentHomeHero
   metrics: ParentHomeMetric[]
+  timeline: ParentHomeTimelineItem[]
   primaryActions: ParentHomeAction[]
   secondaryActions: ParentHomeAction[]
   latestUpdate: ParentHomeActivity
