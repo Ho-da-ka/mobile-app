@@ -1,50 +1,92 @@
-﻿<template>
+<template>
   <view class="page">
-    <view class="card">
-      <view class="title">学员管理</view>
-
-      <view style="margin-top: 16rpx">
-        <view>姓名筛选</view>
-        <input class="input" v-model="query.name" placeholder="按学员姓名搜索" />
-      </view>
-
-      <view style="margin-top: 16rpx">
-        <view>状态筛选</view>
-        <picker :range="statusOptions" range-key="label" :value="statusIndex" @change="onStatusChange">
-          <view class="picker">{{ statusLabel }}</view>
-        </picker>
-      </view>
-
-      <view class="row gap" style="margin-top: 18rpx">
-        <u-button type="primary" text="查询" @click="handleSearch" />
-        <u-button text="重置" @click="handleReset" />
-        <u-button type="success" text="新增学员" @click="goCreate" />
-      </view>
-    </view>
-
-    <view v-if="loading" class="card">加载中...</view>
-
-    <view v-else>
-      <view v-for="item in rows" :key="item.id" class="card">
-        <view class="row between">
-          <view>
-            <view style="font-size: 30rpx; font-weight: 600">{{ item.name }}</view>
-            <view class="sub-title" style="margin-top: 8rpx">学号：{{ item.studentNo }}</view>
-            <view class="sub-title">性别：{{ genderText(item.gender) }} / 状态：{{ statusText(item.status) }}</view>
-          </view>
-          <view class="row" style="gap: 10rpx">
-            <u-button size="mini" text="详情" @click="goDetail(item.id)" />
-            <u-button size="mini" type="primary" text="编辑" @click="goEdit(item.id)" />
+    <!-- Sticky Search Header -->
+    <view class="sticky-header">
+      <view class="search-row">
+        <view class="search-container">
+          <u-search
+            placeholder="搜索学员姓名"
+            v-model="query.name"
+            :show-action="false"
+            @search="handleSearch"
+            @clear="handleReset"
+            shape="round"
+            bg-color="#F1F5F9"
+            height="72rpx"
+          />
+        </view>
+        <view class="action-icons">
+          <picker :range="statusOptions" range-key="label" :value="statusIndex" @change="onStatusChange">
+            <view class="icon-btn">
+              <u-icon name="filter" size="40rpx" color="#64748B" />
+            </view>
+          </picker>
+          <view class="icon-btn add-btn" @click="goCreate">
+            <u-icon name="plus" size="40rpx" color="#FFFFFF" />
           </view>
         </view>
       </view>
-
-      <view class="card row between">
-        <u-button size="small" text="上一页" :disabled="query.page <= 0" @click="prevPage" />
-        <view class="sub-title">第 {{ query.page + 1 }} / {{ totalPages }} 页（共 {{ totalElements }} 条）</view>
-        <u-button size="small" text="下一页" :disabled="query.page + 1 >= totalPages" @click="nextPage" />
+      <view v-if="query.status" class="filter-tags">
+        <u-tag
+          :text="'状态: ' + statusLabel"
+          size="mini"
+          type="info"
+          closable
+          @close="resetStatus"
+          class="tag-item"
+        />
       </view>
     </view>
+
+    <!-- List Content -->
+    <scroll-view scroll-y class="list-scroll" @scrolltolower="onReachBottom">
+      <view v-if="loading && rows.length === 0" class="state-container">
+        <u-loading-icon text="正在加载学员..." size="32" />
+      </view>
+
+      <view v-else-if="rows.length === 0" class="state-container">
+        <u-empty mode="data" text="暂无学员记录" />
+      </view>
+
+      <view v-else class="list-padding">
+        <view v-for="item in rows" :key="item.id" class="list-card" @click="goDetail(item.id)">
+          <view class="card-header">
+            <text class="card-title">{{ item.name }}</text>
+            <u-tag :text="statusText(item.status)" :type="statusTagType(item.status)" size="mini" shape="circle" />
+          </view>
+          
+          <view class="card-meta">
+            <view class="meta-item">
+              <u-icon name="account" size="24rpx" color="#94A3B8" />
+              <text class="meta-text">学号：{{ item.studentNo }}</text>
+            </view>
+            <view class="meta-item">
+              <u-icon name="man-add" size="24rpx" color="#94A3B8" />
+              <text class="meta-text">性别：{{ genderText(item.gender) }}</text>
+            </view>
+          </view>
+
+          <view class="card-footer">
+            <view class="spacer" />
+            <view class="actions">
+              <text class="action-link primary" @click.stop="goEdit(item.id)">编辑</text>
+              <text class="action-link" @click.stop="goDetail(item.id)">详情</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- Pagination Footer -->
+        <view class="pagination-footer" v-if="totalPages > 1">
+          <view class="page-btn" :class="{ disabled: query.page <= 0 }" @click="prevPage">
+            <u-icon name="arrow-left" size="28rpx" :color="query.page <= 0 ? '#CBD5E1' : '#475569'" />
+          </view>
+          <text class="page-info">{{ query.page + 1 }} / {{ totalPages }}</text>
+          <view class="page-btn" :class="{ disabled: query.page + 1 >= totalPages }" @click="nextPage">
+            <u-icon name="arrow-right" size="28rpx" :color="query.page + 1 >= totalPages ? '#CBD5E1' : '#475569'" />
+          </view>
+        </view>
+      </view>
+    </scroll-view>
   </view>
 </template>
 
@@ -96,12 +138,28 @@ function statusText(value: string) {
   return findLabel(studentStatusOptions, value)
 }
 
+function statusTagType(status: string) {
+  switch (status) {
+    case 'ACTIVE': return 'success'
+    case 'INACTIVE': return 'info'
+    case 'GRADUATED': return 'warning'
+    default: return 'info'
+  }
+}
+
 function onStatusChange(event: any) {
   const idx = Number(event.detail.value)
   query.status = statusOptions[idx]?.value || ''
+  handleSearch()
+}
+
+function resetStatus() {
+  query.status = ''
+  handleSearch()
 }
 
 async function fetchData() {
+  if (loading.value) return
   loading.value = true
   try {
     const data = await listStudents({
@@ -143,6 +201,10 @@ function nextPage() {
   fetchData()
 }
 
+function onReachBottom() {
+  // Use pagination instead of infinite scroll for admin lists to match spec
+}
+
 function goCreate() {
   uni.navigateTo({ url: '/pages/admin/students/form?mode=create' })
 }
@@ -175,12 +237,173 @@ onShow(() => {
 </script>
 
 <style scoped lang="scss">
-.input,
-.picker {
-  background: #f9fafb;
-  border: 1rpx solid #e5e7eb;
-  border-radius: 12rpx;
-  padding: 18rpx 20rpx;
-  margin-top: 10rpx;
+.page {
+  background-color: #F8FAFC;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: #FFFFFF;
+  padding: 20rpx 32rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.02);
+}
+
+.search-row {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.search-container {
+  flex: 1;
+}
+
+.action-icons {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.icon-btn {
+  width: 72rpx;
+  height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #F1F5F9;
+  border-radius: 16rpx;
+  
+  &.add-btn {
+    background-color: #3B82F6;
+  }
+}
+
+.filter-tags {
+  margin-top: 16rpx;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.list-scroll {
+  flex: 1;
+  height: 0;
+}
+
+.list-padding {
+  padding: 24rpx 32rpx 40rpx;
+}
+
+.state-container {
+  padding: 100rpx 0;
+  display: flex;
+  justify-content: center;
+}
+
+.list-card {
+  background-color: #FFFFFF;
+  border-radius: 24rpx;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 4rpx 12rpx rgba(15, 23, 42, 0.03);
+  transition: all 0.2s;
+
+  &:active {
+    transform: scale(0.99);
+    background-color: #F8FAFC;
+  }
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20rpx;
+}
+
+.card-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #0F172A;
+  line-height: 1.4;
+}
+
+.card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  margin-bottom: 24rpx;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.meta-text {
+  font-size: 26rpx;
+  color: #64748B;
+}
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  border-top: 2rpx solid #F1F5F9;
+  padding-top: 24rpx;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.actions {
+  display: flex;
+  gap: 32rpx;
+}
+
+.action-link {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #64748B;
+  
+  &.primary {
+    color: #3B82F6;
+  }
+}
+
+.pagination-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 40rpx;
+  margin-top: 40rpx;
+  padding-bottom: 40rpx;
+}
+
+.page-btn {
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+
+  &.disabled {
+    opacity: 0.5;
+  }
+}
+
+.page-info {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #475569;
 }
 </style>

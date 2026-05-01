@@ -1,56 +1,87 @@
-﻿<template>
+<template>
   <view class="page">
-    <view class="card">
-      <view class="title">考勤管理</view>
-
-      <view style="margin-top: 16rpx">
-        <view>学员筛选</view>
-        <picker :range="studentOptions" range-key="name" :value="studentIndex" @change="onStudentChange">
-          <view class="picker">{{ studentLabel }}</view>
-        </picker>
+    <!-- Sticky Search Header (Filters for Attendance) -->
+    <view class="sticky-header">
+      <view class="filter-grid">
+        <view class="filter-item">
+          <picker :range="studentOptions" range-key="name" :value="studentIndex" @change="onStudentChange">
+            <view class="filter-picker">
+              <text class="filter-label">学员:</text>
+              <text class="filter-value u-line-1">{{ studentLabel }}</text>
+              <u-icon name="arrow-down" size="24rpx" color="#64748B" />
+            </view>
+          </picker>
+        </view>
+        <view class="filter-item">
+          <picker :range="courseOptions" range-key="name" :value="courseIndex" @change="onCourseChange">
+            <view class="filter-picker">
+              <text class="filter-label">课程:</text>
+              <text class="filter-value u-line-1">{{ courseLabel }}</text>
+              <u-icon name="arrow-down" size="24rpx" color="#64748B" />
+            </view>
+          </picker>
+        </view>
       </view>
 
-      <view style="margin-top: 16rpx">
-        <view>课程筛选</view>
-        <picker :range="courseOptions" range-key="name" :value="courseIndex" @change="onCourseChange">
-          <view class="picker">{{ courseLabel }}</view>
-        </picker>
-      </view>
-
-      <view style="margin-top: 16rpx">
-        <view>开始日期</view>
-        <picker mode="date" :value="query.startDate" @change="onStartDateChange">
-          <view class="picker">{{ query.startDate || '请选择开始日期' }}</view>
-        </picker>
-      </view>
-
-      <view style="margin-top: 16rpx">
-        <view>结束日期</view>
-        <picker mode="date" :value="query.endDate" @change="onEndDateChange">
-          <view class="picker">{{ query.endDate || '请选择结束日期' }}</view>
-        </picker>
-      </view>
-
-      <view class="row gap" style="margin-top: 18rpx">
-        <u-button type="primary" text="查询" @click="fetchData" />
-        <u-button text="重置" @click="handleReset" />
-        <u-button type="success" text="新增考勤" @click="goCreate" />
+      <view class="search-row" style="margin-top: 20rpx">
+        <view class="date-range">
+          <picker mode="date" :value="query.startDate" @change="onStartDateChange">
+            <view class="date-picker">
+              <text class="date-text">{{ query.startDate || '开始日期' }}</text>
+            </view>
+          </picker>
+          <text class="date-sep">-</text>
+          <picker mode="date" :value="query.endDate" @change="onEndDateChange">
+            <view class="date-picker">
+              <text class="date-text">{{ query.endDate || '结束日期' }}</text>
+            </view>
+          </picker>
+        </view>
+        <view class="action-icons">
+          <view class="icon-btn" @click="handleReset">
+            <u-icon name="reload" size="36rpx" color="#64748B" />
+          </view>
+          <view class="icon-btn add-btn" @click="goCreate">
+            <u-icon name="plus" size="36rpx" color="#FFFFFF" />
+          </view>
+        </view>
       </view>
     </view>
 
-    <view v-if="loading" class="card">加载中...</view>
-
-    <view v-else>
-      <view v-for="item in rows" :key="item.id" class="card">
-        <view style="font-size: 30rpx; font-weight: 600">{{ item.studentName }}</view>
-        <view class="sub-title" style="margin-top: 8rpx">课程：{{ item.courseName }}</view>
-        <view class="sub-title">日期：{{ item.attendanceDate }}</view>
-        <view class="sub-title">状态：{{ statusText(item.status) }}</view>
-        <view class="sub-title">备注：{{ item.note || '-' }}</view>
+    <!-- List Content -->
+    <scroll-view scroll-y class="list-scroll">
+      <view v-if="loading && rows.length === 0" class="state-container">
+        <u-loading-icon text="正在加载考勤..." size="32" />
       </view>
 
-      <view v-if="!rows.length" class="card">暂无考勤记录</view>
-    </view>
+      <view v-else-if="rows.length === 0" class="state-container">
+        <u-empty mode="data" text="暂无考勤记录" />
+      </view>
+
+      <view v-else class="list-padding">
+        <view v-for="item in rows" :key="item.id" class="list-card">
+          <view class="card-header">
+            <text class="card-title">{{ item.studentName }}</text>
+            <u-tag :text="statusText(item.status)" :type="statusTagType(item.status)" size="mini" shape="circle" />
+          </view>
+          
+          <view class="card-meta">
+            <view class="meta-item">
+              <u-icon name="grid" size="24rpx" color="#94A3B8" />
+              <text class="meta-text">课程：{{ item.courseName }}</text>
+            </view>
+            <view class="meta-item">
+              <u-icon name="calendar" size="24rpx" color="#94A3B8" />
+              <text class="meta-text">日期：{{ item.attendanceDate }}</text>
+            </view>
+            <view v-if="item.note" class="meta-item">
+              <u-icon name="chat" size="24rpx" color="#94A3B8" />
+              <text class="meta-text">备注：{{ item.note }}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
   </view>
 </template>
 
@@ -101,6 +132,15 @@ function statusText(value: string) {
   return findLabel(attendanceStatusOptions, value)
 }
 
+function statusTagType(status: string) {
+  switch (status) {
+    case 'PRESENT': return 'success'
+    case 'ABSENT': return 'error'
+    case 'LEAVE': return 'warning'
+    default: return 'info'
+  }
+}
+
 async function loadOptions() {
   const [students, courses] = await Promise.all([
     listStudents({ page: 0, size: 200 }),
@@ -111,14 +151,16 @@ async function loadOptions() {
 }
 
 async function fetchData() {
+  if (loading.value) return
   loading.value = true
   try {
-    rows.value = await listAttendances({
+    const data = await listAttendances({
       studentId: query.studentId || undefined,
       courseId: query.courseId || undefined,
       startDate: query.startDate || undefined,
       endDate: query.endDate || undefined
     })
+    rows.value = data || []
   } catch (error) {
     showError(error, '考勤列表获取失败')
   } finally {
@@ -129,19 +171,23 @@ async function fetchData() {
 function onStudentChange(event: any) {
   const index = Number(event.detail.value)
   query.studentId = studentOptions.value[index]?.id || undefined
+  fetchData()
 }
 
 function onCourseChange(event: any) {
   const index = Number(event.detail.value)
   query.courseId = courseOptions.value[index]?.id || undefined
+  fetchData()
 }
 
 function onStartDateChange(event: any) {
   query.startDate = event.detail.value
+  fetchData()
 }
 
 function onEndDateChange(event: any) {
   query.endDate = event.detail.value
+  fetchData()
 }
 
 function handleReset() {
@@ -174,11 +220,156 @@ onShow(() => {
 </script>
 
 <style scoped lang="scss">
-.picker {
-  background: #f9fafb;
-  border: 1rpx solid #e5e7eb;
-  border-radius: 12rpx;
-  padding: 18rpx 20rpx;
-  margin-top: 10rpx;
+.page {
+  background-color: #F8FAFC;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: #FFFFFF;
+  padding: 24rpx 32rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.02);
+}
+
+.filter-grid {
+  display: flex;
+  gap: 16rpx;
+}
+
+.filter-item {
+  flex: 1;
+}
+
+.filter-picker {
+  background-color: #F1F5F9;
+  border-radius: 16rpx;
+  padding: 16rpx 20rpx;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.filter-label {
+  font-size: 24rpx;
+  color: #64748B;
+  white-space: nowrap;
+}
+
+.filter-value {
+  flex: 1;
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #0F172A;
+}
+
+.search-row {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.date-range {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background-color: #F1F5F9;
+  border-radius: 16rpx;
+  padding: 0 16rpx;
+  height: 72rpx;
+}
+
+.date-picker {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.date-text {
+  font-size: 24rpx;
+  color: #475569;
+}
+
+.date-sep {
+  margin: 0 8rpx;
+  color: #94A3B8;
+}
+
+.action-icons {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.icon-btn {
+  width: 72rpx;
+  height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #F1F5F9;
+  border-radius: 16rpx;
+  
+  &.add-btn {
+    background-color: #3B82F6;
+  }
+}
+
+.list-scroll {
+  flex: 1;
+  height: 0;
+}
+
+.list-padding {
+  padding: 24rpx 32rpx 40rpx;
+}
+
+.state-container {
+  padding: 100rpx 0;
+  display: flex;
+  justify-content: center;
+}
+
+.list-card {
+  background-color: #FFFFFF;
+  border-radius: 24rpx;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 4rpx 12rpx rgba(15, 23, 42, 0.03);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20rpx;
+}
+
+.card-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #0F172A;
+  line-height: 1.4;
+}
+
+.card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.meta-text {
+  font-size: 26rpx;
+  color: #64748B;
 }
 </style>
