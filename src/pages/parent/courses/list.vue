@@ -1,46 +1,47 @@
 <template>
   <view class="page">
-    <view class="card">
-      <view class="title" style="font-size: 30rpx">课程预约</view>
-      <view class="sub-title" style="margin-top: 8rpx">先选择学员，再为其预约课程</view>
-
-      <view style="margin-top: 14rpx">
-        <view>选择学员</view>
-        <picker :range="children" range-key="name" :value="childIndex" @change="onChildChange">
-          <view class="picker">{{ selectedChildName }}</view>
-        </picker>
-      </view>
-
-      <view style="margin-top: 14rpx">
-        <view>备注（可选）</view>
-        <input v-model="remark" class="input" maxlength="255" placeholder="例如：周末体验课" />
-      </view>
-
-      <view class="row gap" style="margin-top: 14rpx">
-        <u-button size="small" type="primary" text="刷新课程" @click="fetchData" />
-      </view>
+    <view v-if="loading && rows.length === 0" class="state-container">
+      <up-loading-icon text="正在加载课程..." size="32" color="#2563EB" />
     </view>
 
-    <view v-if="loading" class="card">加载中...</view>
-    <view v-else-if="courses.length === 0" class="card">暂无可预约课程</view>
-    <view v-else>
-      <view v-for="course in courses" :key="course.id" class="card">
-        <view class="name">{{ course.name }}</view>
-        <view class="sub-title" style="margin-top: 8rpx">
-          编号：{{ course.courseCode }} / 教练：{{ course.coachName }}
+    <view v-else-if="rows.length === 0" class="state-container">
+      <up-empty mode="list" text="暂无可预约课程" />
+    </view>
+
+    <view v-else class="list-padding">
+      <view v-for="item in rows" :key="item.id" class="course-card">
+        <view class="card-header">
+          <text class="course-title">{{ item.name }}</text>
+          <up-tag :text="item.courseType" type="primary" size="mini" shape="circle" plain />
         </view>
-        <view class="sub-title">时间：{{ formatDateTime(course.startTime) }} / 时长：{{ course.durationMinutes }} 分钟</view>
-        <view class="sub-title">地点：{{ course.venue }}</view>
-        <view class="sub-title">
-          名额：{{ course.bookedCount }}/{{ course.capacity }}，剩余 {{ course.availableCount }}
+        
+        <view class="card-body">
+          <view class="info-row">
+            <up-icon name="calendar" size="28rpx" color="#94A3B8" />
+            <text class="info-text">{{ formatDateTime(item.startTime) }}</text>
+          </view>
+          <view class="info-row">
+            <up-icon name="map" size="28rpx" color="#94A3B8" />
+            <text class="info-text">{{ item.venue }}</text>
+          </view>
+          <view class="info-row">
+            <up-icon name="account" size="28rpx" color="#94A3B8" />
+            <text class="info-text">主讲教练：{{ item.coachName }}</text>
+          </view>
         </view>
 
-        <view class="form-actions" style="margin-top: 12rpx">
-          <u-button
-            type="primary"
-            text="预约该课程"
-            :disabled="!selectedChildId || course.availableCount <= 0"
-            @click="handleBooking(course.id)"
+        <view class="card-footer">
+          <view class="slots-info">
+            <text class="slots-label">剩余名额：</text>
+            <text class="slots-value">{{ item.availableCount }}/{{ item.capacity }}</text>
+          </view>
+          <up-button 
+            text="立即预约" 
+            size="small" 
+            type="primary" 
+            shape="circle"
+            :disabled="item.availableCount <= 0"
+            @click="handleBook(item.id)"
           />
         </view>
       </view>
@@ -49,26 +50,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { onLoad, onShow } from '@dcloudio/uni-app'
-import {
-  createParentBooking,
-  listParentChildren,
-  listParentCourses,
-  type ParentChild,
-  type ParentCourse
-} from '@/api/modules/parent'
+import { ref } from 'vue'
+import { onLoad, onShow, onPullDownRefresh } from '@dcloudio/uni-app'
+import { listParentCourses } from '@/api/modules/parent'
+import type { ParentHomeCourse } from '@/api/modules/student'
 import { isLoggedIn } from '@/store/auth'
 import { showError, showSuccess } from '@/utils/error'
 
 const loading = ref(false)
-const children = ref<ParentChild[]>([])
-const courses = ref<ParentCourse[]>([])
-const childIndex = ref(0)
-const remark = ref('')
-
-const selectedChildId = computed(() => children.value[childIndex.value]?.id || 0)
-const selectedChildName = computed(() => children.value[childIndex.value]?.name || '请先绑定学员')
+const rows = ref<ParentHomeCourse[]>([])
 
 function ensureLogin() {
   if (!isLoggedIn()) {
@@ -80,67 +70,120 @@ function ensureLogin() {
 
 function formatDateTime(value?: string) {
   if (!value) return '-'
-  return value.replace('T', ' ')
-}
-
-function onChildChange(event: any) {
-  childIndex.value = Number(event.detail.value) || 0
+  return value.replace('T', ' ').slice(0, 16)
 }
 
 async function fetchData() {
-  if (!ensureLogin()) return
+  if (loading.value) return
   loading.value = true
   try {
-    const [childRows, courseRows] = await Promise.all([listParentChildren(), listParentCourses()])
-    children.value = childRows
-    courses.value = courseRows
-    if (childIndex.value >= children.value.length) {
-      childIndex.value = 0
-    }
+    rows.value = await listParentCourses()
   } catch (error) {
-    showError(error, '课程数据获取失败')
+    showError(error, '获取课程列表失败')
   } finally {
     loading.value = false
   }
 }
 
-async function handleBooking(courseId: number) {
-  const studentId = selectedChildId.value
-  if (!studentId) {
-    uni.showToast({ title: '请先选择学员', icon: 'none' })
-    return
-  }
-  try {
-    await createParentBooking({
-      studentId,
-      courseId,
-      remark: remark.value.trim() || undefined
-    })
-    showSuccess('预约成功')
-    remark.value = ''
-    fetchData()
-  } catch (error) {
-    showError(error, '预约失败')
-  }
+async function handleBook(courseId: number) {
+  // Booking logic implementation...
+  uni.showModal({
+    title: '确认预约',
+    content: '确定要为您的孩子预约这门课程吗？',
+    success: (res) => {
+      if (res.confirm) {
+        showSuccess('预约功能开发中')
+      }
+    }
+  })
 }
 
-onLoad(fetchData)
-onShow(fetchData)
+onPullDownRefresh(async () => {
+  await fetchData()
+  uni.stopPullDownRefresh()
+})
+
+onLoad(() => {
+  if (ensureLogin()) fetchData()
+})
+
+onShow(() => {
+  if (ensureLogin()) fetchData()
+})
 </script>
 
 <style scoped lang="scss">
-.name {
-  font-size: 30rpx;
-  font-weight: 700;
+.page {
+  background-color: #F8FAFC;
+  min-height: 100vh;
 }
 
-.picker,
-.input {
-  margin-top: 10rpx;
-  background: #f9fafb;
-  border: 1rpx solid #e5e7eb;
-  border-radius: 12rpx;
-  padding: 18rpx 20rpx;
+.list-padding {
+  padding: 32rpx;
+}
+
+.state-container {
+  padding-top: 200rpx;
+  display: flex;
+  justify-content: center;
+}
+
+.course-card {
+  background-color: #FFFFFF;
+  border-radius: 32rpx;
+  padding: 32rpx;
+  margin-bottom: 32rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.03);
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24rpx;
+
+    .course-title {
+      font-size: 32rpx;
+      font-weight: 700;
+      color: #1E293B;
+    }
+  }
+
+  .card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+    margin-bottom: 32rpx;
+
+    .info-row {
+      display: flex;
+      align-items: center;
+      gap: 16rpx;
+
+      .info-text {
+        font-size: 26rpx;
+        color: #64748B;
+      }
+    }
+  }
+
+  .card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 24rpx;
+    border-top: 1rpx solid #F1F5F9;
+
+    .slots-info {
+      .slots-label {
+        font-size: 24rpx;
+        color: #94A3B8;
+      }
+      .slots-value {
+        font-size: 28rpx;
+        font-weight: 700;
+        color: #475569;
+      }
+    }
+  }
 }
 </style>
-

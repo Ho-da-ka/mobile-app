@@ -16,13 +16,15 @@
     {
       "path": "pages/admin/home",
       "style": {
-        "navigationBarTitleText": "管理首页"
+        "navigationBarTitleText": "管理首页",
+        "enablePullDownRefresh": true
       }
     },
     {
       "path": "pages/admin/students/list",
       "style": {
-        "navigationBarTitleText": "学员管理"
+        "navigationBarTitleText": "学员管理",
+        "enablePullDownRefresh": true
       }
     },
     {
@@ -40,7 +42,8 @@
     {
       "path": "pages/admin/courses/list",
       "style": {
-        "navigationBarTitleText": "课程管理"
+        "navigationBarTitleText": "课程管理",
+        "enablePullDownRefresh": true
       }
     },
     {
@@ -58,7 +61,8 @@
     {
       "path": "pages/admin/coaches/list",
       "style": {
-        "navigationBarTitleText": "教练信息"
+        "navigationBarTitleText": "教练信息",
+        "enablePullDownRefresh": true
       }
     },
     {
@@ -76,7 +80,8 @@
     {
       "path": "pages/admin/attendances/list",
       "style": {
-        "navigationBarTitleText": "考勤管理"
+        "navigationBarTitleText": "考勤管理",
+        "enablePullDownRefresh": true
       }
     },
     {
@@ -88,7 +93,8 @@
     {
       "path": "pages/admin/fitness/list",
       "style": {
-        "navigationBarTitleText": "体测管理"
+        "navigationBarTitleText": "体测管理",
+        "enablePullDownRefresh": true
       }
     },
     {
@@ -100,7 +106,8 @@
     {
       "path": "pages/admin/training/list",
       "style": {
-        "navigationBarTitleText": "训练记录"
+        "navigationBarTitleText": "训练记录",
+        "enablePullDownRefresh": true
       }
     },
     {
@@ -118,73 +125,85 @@
     {
       "path": "pages/student/home",
       "style": {
-        "navigationBarTitleText": "学生首页"
+        "navigationBarTitleText": "学生首页",
+        "enablePullDownRefresh": true
       }
     },
     {
       "path": "pages/student/courses/list",
       "style": {
-        "navigationBarTitleText": "学生课程"
+        "navigationBarTitleText": "学生课程",
+        "enablePullDownRefresh": true
       }
     },
     {
       "path": "pages/student/training/list",
       "style": {
-        "navigationBarTitleText": "学生训练记录"
+        "navigationBarTitleText": "学生训练记录",
+        "enablePullDownRefresh": true
       }
     },
     {
       "path": "pages/student/fitness/list",
       "style": {
-        "navigationBarTitleText": "学生体测记录"
+        "navigationBarTitleText": "学生体测记录",
+        "enablePullDownRefresh": true
       }
     },
     {
       "path": "pages/parent/home",
       "style": {
-        "navigationBarTitleText": "家长首页"
+        "navigationBarTitleText": "家长首页",
+        "enablePullDownRefresh": true
       }
     },
     {
       "path": "pages/parent/children/list",
       "style": {
-        "navigationBarTitleText": "我的孩子"
+        "navigationBarTitleText": "我的孩子",
+        "enablePullDownRefresh": true
       }
     },
     {
       "path": "pages/parent/courses/list",
       "style": {
-        "navigationBarTitleText": "可约课程"
+        "navigationBarTitleText": "可约课程",
+        "enablePullDownRefresh": true
       }
     },
     {
       "path": "pages/parent/bookings/list",
       "style": {
-        "navigationBarTitleText": "预约记录"
+        "navigationBarTitleText": "预约记录",
+        "enablePullDownRefresh": true
       }
     },
     {
       "path": "pages/parent/checkin/list",
       "style": {
-        "navigationBarTitleText": "签到记录"
+        "navigationBarTitleText": "签到记录",
+        "enablePullDownRefresh": true
       }
     },
     {
       "path": "pages/parent/fitness/list",
       "style": {
-        "navigationBarTitleText": "体测结果"
+        "navigationBarTitleText": "体测结果",
+        "enablePullDownRefresh": true
       }
     },
     {
       "path": "pages/parent/messages/list",
       "style": {
-        "navigationBarTitleText": "站内消息"
+        "navigationBarTitleText": "站内消息",
+        "enablePullDownRefresh": true
       }
     },
     {
       "path": "pages/parent/growth/index",
       "style": {
-        "navigationBarTitleText": "成长总览"
+        "navigationBarTitleText": "成长总览",
+        "enablePullDownRefresh": true
       }
     }
   ],
@@ -192,6 +211,6 @@
     "navigationBarTextStyle": "black",
     "navigationBarTitleText": "ZF青少年体能教务",
     "navigationBarBackgroundColor": "#ffffff",
-    "backgroundColor": "#f5f7fb"
+    "backgroundColor": "#f8fafc"
   }
 }

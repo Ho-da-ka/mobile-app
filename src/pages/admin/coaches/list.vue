@@ -1,10 +1,9 @@
 <template>
   <view class="page">
-    <!-- Sticky Search Header -->
     <view class="sticky-header">
       <view class="search-row">
         <view class="search-container">
-          <u-search
+          <up-search
             placeholder="搜索教练姓名"
             v-model="query.name"
             :show-action="false"
@@ -16,78 +15,46 @@
           />
         </view>
         <view class="action-icons">
-          <picker :range="statusOptions" range-key="label" :value="statusIndex" @change="onStatusChange">
-            <view class="icon-btn">
-              <u-icon name="filter" size="40rpx" color="#64748B" />
-            </view>
-          </picker>
-          <view v-if="isAdmin" class="icon-btn add-btn" @click="goCreate">
-            <u-icon name="plus" size="40rpx" color="#FFFFFF" />
+          <view class="icon-btn add-btn" @click="goCreate">
+            <up-icon name="plus" size="40rpx" color="#FFFFFF" />
           </view>
         </view>
       </view>
-      <view v-if="query.status" class="filter-tags">
-        <u-tag
-          :text="'状态: ' + statusLabel"
-          size="mini"
-          type="info"
-          closable
-          @close="resetStatus"
-          class="tag-item"
-        />
-      </view>
     </view>
 
-    <!-- List Content -->
     <scroll-view scroll-y class="list-scroll">
       <view v-if="loading && rows.length === 0" class="state-container">
-        <u-loading-icon text="正在加载教练..." size="32" />
+        <up-loading-icon text="正在加载教练..." size="32" color="#3B82F6" />
       </view>
 
       <view v-else-if="rows.length === 0" class="state-container">
-        <u-empty mode="data" text="暂无教练记录" />
+        <up-empty mode="data" text="暂无教练记录" />
       </view>
 
       <view v-else class="list-padding">
         <view v-for="item in rows" :key="item.id" class="list-card" @click="goDetail(item.id)">
           <view class="card-header">
             <text class="card-title">{{ item.name }}</text>
-            <u-tag :text="statusText(item.status)" :type="statusTagType(item.status)" size="mini" shape="circle" />
+            <up-tag :text="item.status" :type="item.status === 'ACTIVE' ? 'success' : 'info'" size="mini" shape="circle" />
           </view>
           
           <view class="card-meta">
             <view class="meta-item">
-              <u-icon name="tags" size="24rpx" color="#94A3B8" />
-              <text class="meta-text">编号：{{ item.coachCode }}</text>
+              <up-icon name="phone" size="24rpx" color="#94A3B8" />
+              <text class="meta-text">电话：{{ item.phone }}</text>
             </view>
             <view class="meta-item">
-              <u-icon name="man-add" size="24rpx" color="#94A3B8" />
-              <text class="meta-text">性别：{{ genderText(item.gender) }}</text>
-            </view>
-            <view class="meta-item">
-              <u-icon name="phone" size="24rpx" color="#94A3B8" />
-              <text class="meta-text">手机号：{{ item.phone || '-' }}</text>
+              <up-icon name="tags" size="24rpx" color="#94A3B8" />
+              <text class="meta-text">专业：{{ item.specialties || '全能教练' }}</text>
             </view>
           </view>
 
           <view class="card-footer">
             <view class="spacer" />
             <view class="actions">
-              <text v-if="isAdmin" class="action-link danger" @click.stop="handleDelete(item)">删除</text>
-              <text v-if="isAdmin" class="action-link primary" @click.stop="goEdit(item.id)">编辑</text>
+              <text class="action-link primary" @click.stop="goEdit(item.id)">编辑</text>
               <text class="action-link" @click.stop="goDetail(item.id)">详情</text>
             </view>
-          </view>
-        </view>
-
-        <!-- Pagination Footer -->
-        <view class="pagination-footer" v-if="totalPages > 1">
-          <view class="page-btn" :class="{ disabled: query.page <= 0 }" @click="prevPage">
-            <u-icon name="arrow-left" size="28rpx" :color="query.page <= 0 ? '#CBD5E1' : '#475569'" />
-          </view>
-          <text class="page-info">{{ query.page + 1 }} / {{ totalPages }}</text>
-          <view class="page-btn" :class="{ disabled: query.page + 1 >= totalPages }" @click="nextPage">
-            <u-icon name="arrow-right" size="28rpx" :color="query.page + 1 >= totalPages ? '#CBD5E1' : '#475569'" />
           </view>
         </view>
       </view>
@@ -96,37 +63,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
-import { onLoad, onShow } from '@dcloudio/uni-app'
-import { deleteCoach, listCoaches, type Coach } from '@/api/modules/coaches'
-import { coachStatusOptions, findLabel, genderOptions } from '@/constants/enums'
-import { getAuth, isLoggedIn } from '@/store/auth'
-import { clearDraft, loadDraft, saveDraft } from '@/utils/draft'
-import { showError, showSuccess } from '@/utils/error'
+import { reactive, ref } from 'vue'
+import { onLoad, onShow, onPullDownRefresh } from '@dcloudio/uni-app'
+import { listCoaches, type Coach } from '@/api/modules/coaches'
+import { isLoggedIn } from '@/store/auth'
+import { showError } from '@/utils/error'
 
-const QUERY_DRAFT_KEY = 'coaches.query'
-
-const defaults = {
-  page: 0,
-  size: 10,
-  name: '',
-  status: ''
-}
-
-const query = reactive({
-  ...defaults,
-  ...loadDraft(QUERY_DRAFT_KEY, defaults)
-})
-
+const query = reactive({ name: '' })
 const loading = ref(false)
 const rows = ref<Coach[]>([])
-const totalPages = ref(1)
-const totalElements = ref(0)
-
-const isAdmin = computed(() => getAuth()?.role === 'ADMIN')
-const statusOptions = [{ label: '全部', value: '' }, ...coachStatusOptions]
-const statusIndex = computed(() => statusOptions.findIndex(item => item.value === query.status))
-const statusLabel = computed(() => statusOptions.find(item => item.value === query.status)?.label || '全部')
 
 function ensureLogin() {
   if (!isLoggedIn()) {
@@ -136,47 +81,14 @@ function ensureLogin() {
   return true
 }
 
-function genderText(value: string) {
-  return findLabel(genderOptions, value)
-}
-
-function statusText(value: string) {
-  return findLabel(coachStatusOptions, value)
-}
-
-function statusTagType(status: string) {
-  switch (status) {
-    case 'ACTIVE': return 'success'
-    case 'INACTIVE': return 'info'
-    case 'LEAVE': return 'warning'
-    default: return 'info'
-  }
-}
-
-function onStatusChange(event: any) {
-  const idx = Number(event.detail.value)
-  query.status = statusOptions[idx]?.value || ''
-  handleSearch()
-}
-
-function resetStatus() {
-  query.status = ''
-  handleSearch()
-}
-
 async function fetchData() {
   if (loading.value) return
   loading.value = true
   try {
     const data = await listCoaches({
-      page: query.page,
-      size: query.size,
-      name: query.name.trim() || undefined,
-      status: query.status || undefined
+      name: query.name.trim() || undefined
     })
-    rows.value = data.content || []
-    totalPages.value = data.totalPages || 1
-    totalElements.value = data.totalElements || 0
+    rows.value = data
   } catch (error) {
     showError(error, '教练列表获取失败')
   } finally {
@@ -184,26 +96,17 @@ async function fetchData() {
   }
 }
 
+onPullDownRefresh(async () => {
+  await fetchData()
+  uni.stopPullDownRefresh()
+})
+
 function handleSearch() {
-  query.page = 0
   fetchData()
 }
 
 function handleReset() {
-  Object.assign(query, defaults)
-  clearDraft(QUERY_DRAFT_KEY)
-  fetchData()
-}
-
-function prevPage() {
-  if (query.page <= 0) return
-  query.page -= 1
-  fetchData()
-}
-
-function nextPage() {
-  if (query.page + 1 >= totalPages.value) return
-  query.page += 1
+  query.name = ''
   fetchData()
 }
 
@@ -219,46 +122,12 @@ function goDetail(id: number) {
   uni.navigateTo({ url: `/pages/admin/coaches/detail?id=${id}` })
 }
 
-async function handleDelete(item: Coach) {
-  const confirm = await new Promise<boolean>((resolve) => {
-    uni.showModal({
-      title: '删除确认',
-      content: `确认删除教练“${item.name}”吗？`,
-      confirmText: '删除',
-      confirmColor: '#EF4444',
-      cancelText: '取消',
-      success: (res) => resolve(!!res.confirm),
-      fail: () => resolve(false)
-    })
-  })
-
-  if (!confirm) return
-
-  try {
-    await deleteCoach(item.id)
-    showSuccess('教练删除成功')
-    fetchData()
-  } catch (error) {
-    showError(error, '教练删除失败')
-  }
-}
-
-watch(
-  () => ({ ...query }),
-  (value) => saveDraft(QUERY_DRAFT_KEY, value),
-  { deep: true }
-)
-
 onLoad(() => {
-  if (ensureLogin()) {
-    fetchData()
-  }
+  if (ensureLogin()) fetchData()
 })
 
 onShow(() => {
-  if (ensureLogin()) {
-    fetchData()
-  }
+  if (ensureLogin()) fetchData()
 })
 </script>
 
@@ -273,10 +142,10 @@ onShow(() => {
 .sticky-header {
   position: sticky;
   top: 0;
-  z-index: 100;
-  background-color: #FFFFFF;
+  z-index: 10;
+  background: #fff;
   padding: 20rpx 32rpx;
-  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.02);
+  border-bottom: 1rpx solid #f1f5f9;
 }
 
 .search-row {
@@ -292,7 +161,6 @@ onShow(() => {
 .action-icons {
   display: flex;
   align-items: center;
-  gap: 16rpx;
 }
 
 .icon-btn {
@@ -301,19 +169,10 @@ onShow(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #F1F5F9;
   border-radius: 16rpx;
-  
   &.add-btn {
     background-color: #3B82F6;
   }
-}
-
-.filter-tags {
-  margin-top: 16rpx;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12rpx;
 }
 
 .list-scroll {
@@ -322,7 +181,7 @@ onShow(() => {
 }
 
 .list-padding {
-  padding: 24rpx 32rpx 40rpx;
+  padding: 24rpx 0 40rpx;
 }
 
 .state-container {
@@ -335,12 +194,13 @@ onShow(() => {
   background-color: #FFFFFF;
   border-radius: 24rpx;
   padding: 32rpx;
-  margin-bottom: 24rpx;
-  box-shadow: 0 4rpx 12rpx rgba(15, 23, 42, 0.03);
+  margin: 0 32rpx 24rpx;
+  border: 1rpx solid #E2E8F0;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.02);
   transition: all 0.2s;
 
   &:active {
-    transform: scale(0.99);
+    transform: scale(0.98);
     background-color: #F8FAFC;
   }
 }
@@ -348,15 +208,14 @@ onShow(() => {
 .card-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   margin-bottom: 20rpx;
-}
 
-.card-title {
-  font-size: 32rpx;
-  font-weight: 700;
-  color: #0F172A;
-  line-height: 1.4;
+  .card-title {
+    font-size: 32rpx;
+    font-weight: 700;
+    color: #0F172A;
+  }
 }
 
 .card-meta {
@@ -364,17 +223,17 @@ onShow(() => {
   flex-direction: column;
   gap: 12rpx;
   margin-bottom: 24rpx;
-}
 
-.meta-item {
-  display: flex;
-  align-items: center;
-  gap: 8rpx;
-}
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
 
-.meta-text {
-  font-size: 26rpx;
-  color: #64748B;
+    .meta-text {
+      font-size: 26rpx;
+      color: #64748B;
+    }
+  }
 }
 
 .card-footer {
@@ -382,58 +241,24 @@ onShow(() => {
   align-items: center;
   border-top: 2rpx solid #F1F5F9;
   padding-top: 24rpx;
-}
 
-.spacer {
-  flex: 1;
-}
-
-.actions {
-  display: flex;
-  gap: 32rpx;
-}
-
-.action-link {
-  font-size: 26rpx;
-  font-weight: 600;
-  color: #64748B;
-  
-  &.primary {
-    color: #3B82F6;
+  .spacer {
+    flex: 1;
   }
 
-  &.danger {
-    color: #EF4444;
+  .actions {
+    display: flex;
+    gap: 32rpx;
   }
-}
 
-.pagination-footer {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 40rpx;
-  margin-top: 40rpx;
-  padding-bottom: 40rpx;
-}
+  .action-link {
+    font-size: 26rpx;
+    font-weight: 600;
+    color: #64748B;
 
-.page-btn {
-  width: 64rpx;
-  height: 64rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #FFFFFF;
-  border-radius: 16rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
-
-  &.disabled {
-    opacity: 0.5;
+    &.primary {
+      color: #3B82F6;
+    }
   }
-}
-
-.page-info {
-  font-size: 26rpx;
-  font-weight: 600;
-  color: #475569;
 }
 </style>

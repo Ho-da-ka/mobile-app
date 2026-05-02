@@ -1,45 +1,45 @@
 <template>
   <view class="page">
-    <view class="card">
-      <view class="title" style="font-size: 30rpx">体测记录</view>
-      <view style="margin-top: 12rpx">选择学员</view>
-      <picker :range="children" range-key="name" :value="childIndex" @change="onChildChange">
-        <view class="picker">{{ selectedChildName }}</view>
-      </picker>
-      <view class="row gap" style="margin-top: 12rpx">
-        <u-button size="small" type="primary" text="查询" @click="fetchFitness" />
-      </view>
+    <view v-if="loading && rows.length === 0" class="state-container">
+      <up-loading-icon text="数据加载中..." size="32" color="#2563EB" />
     </view>
 
-    <view v-if="loading" class="card">加载中...</view>
-    <view v-else-if="records.length === 0" class="card">暂无体测记录</view>
-    <view v-else>
-      <view v-for="record in records" :key="record.id" class="card">
-        <view class="name">{{ record.itemName }}</view>
-        <view class="sub-title" style="margin-top: 8rpx">学员：{{ record.studentName }}</view>
-        <view class="sub-title">测试日期：{{ record.testDate }}</view>
-        <view class="sub-title">成绩：{{ record.testValue }} {{ record.unit }}</view>
-        <view class="sub-title" v-if="record.comment">备注：{{ record.comment }}</view>
+    <view v-else-if="rows.length === 0" class="state-container">
+      <up-empty mode="list" text="暂无体测数据" />
+    </view>
+
+    <view v-else class="list-padding">
+      <view v-for="item in rows" :key="item.id" class="fitness-card">
+        <view class="card-header">
+          <text class="item-name">{{ item.itemName }}</text>
+          <text class="test-date">{{ item.testDate }}</text>
+        </view>
+        
+        <view class="card-body">
+          <view class="result-display">
+            <text class="result-value">{{ item.testValue }}</text>
+            <text class="result-unit">{{ item.unit }}</text>
+          </view>
+          <view class="student-info">测试学员：{{ item.studentName }}</view>
+          <view v-if="item.comment" class="comment-box">
+            <text class="comment-text">“ {{ item.comment }} ”</text>
+          </view>
+        </view>
       </view>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { onLoad, onShow } from '@dcloudio/uni-app'
-import { listParentChildren, listParentFitness, type ParentChild } from '@/api/modules/parent'
-import type { FitnessTestRecord } from '@/types/parent'
+import { ref } from 'vue'
+import { onLoad, onShow, onPullDownRefresh } from '@dcloudio/uni-app'
+import { listMyFitnessRecords } from '@/api/modules/student'
+import type { FitnessRecord } from '@/api/modules/fitness'
 import { isLoggedIn } from '@/store/auth'
 import { showError } from '@/utils/error'
 
 const loading = ref(false)
-const children = ref<ParentChild[]>([])
-const childIndex = ref(0)
-const records = ref<FitnessTestRecord[]>([])
-
-const selectedChildId = computed(() => children.value[childIndex.value]?.id || 0)
-const selectedChildName = computed(() => children.value[childIndex.value]?.name || '请先绑定学员')
+const rows = ref<FitnessRecord[]>([])
 
 function ensureLogin() {
   if (!isLoggedIn()) {
@@ -49,56 +49,109 @@ function ensureLogin() {
   return true
 }
 
-function onChildChange(event: any) {
-  childIndex.value = Number(event.detail.value) || 0
-}
-
-async function fetchChildren() {
-  const rows = await listParentChildren()
-  children.value = rows
-  if (childIndex.value >= children.value.length) {
-    childIndex.value = 0
-  }
-}
-
-async function fetchFitness() {
+async function loadData() {
   if (!ensureLogin()) return
   loading.value = true
   try {
-    records.value = await listParentFitness(selectedChildId.value || undefined)
+    rows.value = await listMyFitnessRecords()
   } catch (error) {
-    showError(error, '体测记录获取失败')
+    showError(error, '获取体测记录失败')
   } finally {
     loading.value = false
   }
 }
 
-async function fetchData() {
-  if (!ensureLogin()) return
-  try {
-    await fetchChildren()
-    await fetchFitness()
-  } catch (error) {
-    showError(error, '页面数据初始化失败')
-  }
-}
+onPullDownRefresh(async () => {
+  await loadData()
+  uni.stopPullDownRefresh()
+})
 
-onLoad(fetchData)
-onShow(fetchData)
+onLoad(() => {
+  loadData()
+})
+
+onShow(() => {
+  loadData()
+})
 </script>
 
 <style scoped lang="scss">
-.name {
-  font-size: 30rpx;
-  font-weight: 700;
+.page {
+  background-color: #F8FAFC;
+  min-height: 100vh;
 }
 
-.picker {
-  margin-top: 10rpx;
-  background: #f9fafb;
-  border: 1rpx solid #e5e7eb;
-  border-radius: 12rpx;
-  padding: 18rpx 20rpx;
+.list-padding {
+  padding: 32rpx;
+}
+
+.state-container {
+  padding-top: 200rpx;
+  display: flex;
+  justify-content: center;
+}
+
+.fitness-card {
+  background-color: #FFFFFF;
+  border-radius: 32rpx;
+  padding: 40rpx;
+  margin-bottom: 32rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.03);
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32rpx;
+
+    .item-name {
+      font-size: 32rpx;
+      font-weight: 700;
+      color: #1E293B;
+    }
+
+    .test-date {
+      font-size: 24rpx;
+      color: #94A3B8;
+    }
+  }
+
+  .card-body {
+    .result-display {
+      display: flex;
+      align-items: baseline;
+      gap: 8rpx;
+      margin-bottom: 16rpx;
+
+      .result-value {
+        font-size: 56rpx;
+        font-weight: 800;
+        color: #2563EB;
+      }
+
+      .result-unit {
+        font-size: 24rpx;
+        color: #64748B;
+      }
+    }
+
+    .student-info {
+      font-size: 24rpx;
+      color: #94A3B8;
+      margin-bottom: 24rpx;
+    }
+
+    .comment-box {
+      background-color: #F1F5F9;
+      padding: 20rpx 24rpx;
+      border-radius: 16rpx;
+      
+      .comment-text {
+        font-size: 26rpx;
+        color: #475569;
+        font-style: italic;
+      }
+    }
+  }
 }
 </style>
-

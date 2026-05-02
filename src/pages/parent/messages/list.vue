@@ -1,26 +1,28 @@
 <template>
   <view class="page">
-    <view class="card row between">
-      <view class="title" style="font-size: 30rpx">站内消息</view>
-      <view class="row gap">
-        <u-button size="small" text="成长总览" @click="goGrowth" />
-        <u-button size="small" type="primary" text="刷新" @click="fetchMessages" />
-      </view>
+    <view v-if="loading && rows.length === 0" class="state-container">
+      <up-loading-icon text="同步消息中..." size="32" color="#2563EB" />
     </view>
 
-    <view v-if="loading" class="card">加载中...</view>
-    <view v-else-if="messages.length === 0" class="card">暂无消息</view>
-    <view v-else>
-      <view v-for="msg in messages" :key="msg.id" class="card">
-        <view class="row between">
-          <view class="name">{{ msg.title }}</view>
-          <view class="read-tag" :class="msg.read ? 'read' : 'unread'">{{ msg.read ? '已读' : '未读' }}</view>
+    <view v-else-if="rows.length === 0" class="state-container">
+      <up-empty mode="message" text="您的收件箱是空的" />
+    </view>
+
+    <view v-else class="list-padding">
+      <view v-for="item in rows" :key="item.id" class="message-card" :class="{ unread: !item.read }">
+        <view class="card-header">
+          <view class="type-indicator">
+            <up-icon :name="item.msgType === 'REMINDER' ? 'bell-fill' : 'volume-fill'" size="40rpx" :color="item.read ? '#94A3B8' : '#2563EB'" />
+          </view>
+          <view class="title-area">
+            <text class="msg-title">{{ item.title }}</text>
+            <text class="msg-time">{{ formatTime(item.createdAt) }}</text>
+          </view>
+          <view v-if="!item.read" class="unread-dot" />
         </view>
-        <view class="sub-title" style="margin-top: 8rpx">类型：{{ msg.msgType }}</view>
-        <view class="content">{{ msg.content }}</view>
-        <view class="sub-title">时间：{{ formatDateTime(msg.createdAt) }}</view>
-        <view class="form-actions" v-if="!msg.read">
-          <u-button size="small" type="primary" text="标记已读" @click="handleRead(msg.id)" />
+        
+        <view class="card-body">
+          <text class="msg-content">{{ item.content }}</text>
         </view>
       </view>
     </view>
@@ -29,14 +31,14 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { onLoad, onShow } from '@dcloudio/uni-app'
-import { listParentChildren, listParentMessages, readParentMessage, type ParentMessage } from '@/api/modules/parent'
+import { onLoad, onShow, onPullDownRefresh } from '@dcloudio/uni-app'
+import { listMyMessages } from '@/api/modules/student'
+import type { ParentHomeMessage } from '@/api/modules/student'
 import { isLoggedIn } from '@/store/auth'
-import { showError, showSuccess } from '@/utils/error'
+import { showError } from '@/utils/error'
 
 const loading = ref(false)
-const messages = ref<ParentMessage[]>([])
-const primaryChildId = ref<number | null>(null)
+const rows = ref<ParentHomeMessage[]>([])
 
 function ensureLogin() {
   if (!isLoggedIn()) {
@@ -46,78 +48,119 @@ function ensureLogin() {
   return true
 }
 
-function formatDateTime(value?: string) {
+function formatTime(value?: string) {
   if (!value) return '-'
-  return value.replace('T', ' ')
+  const date = new Date(value)
+  const now = new Date()
+  const isToday = date.toDateString() === now.toDateString()
+  return isToday ? value.split('T')[1].slice(0, 5) : value.slice(5, 10).replace('-', '/')
 }
 
-async function fetchMessages() {
+async function loadData() {
   if (!ensureLogin()) return
   loading.value = true
   try {
-    const [messageList, children] = await Promise.all([
-      listParentMessages(),
-      listParentChildren()
-    ])
-    messages.value = messageList
-    primaryChildId.value = children[0]?.id ?? null
+    rows.value = await listMyMessages()
   } catch (error) {
-    showError(error, '消息获取失败')
+    showError(error, '获取消息失败')
   } finally {
     loading.value = false
   }
 }
 
-function goGrowth() {
-  if (!primaryChildId.value) {
-    uni.showToast({ title: '请先绑定孩子', icon: 'none' })
-    return
-  }
-  uni.navigateTo({ url: `/pages/parent/growth/index?studentId=${primaryChildId.value}` })
-}
+onPullDownRefresh(async () => {
+  await loadData()
+  uni.stopPullDownRefresh()
+})
 
-async function handleRead(id: number) {
-  try {
-    await readParentMessage(id)
-    showSuccess('已标记已读')
-    fetchMessages()
-  } catch (error) {
-    showError(error, '操作失败')
-  }
-}
+onLoad(() => {
+  loadData()
+})
 
-onLoad(fetchMessages)
-onShow(fetchMessages)
+onShow(() => {
+  loadData()
+})
 </script>
 
 <style scoped lang="scss">
-.name {
-  font-size: 30rpx;
-  font-weight: 700;
+.page {
+  background-color: #F8FAFC;
+  min-height: 100vh;
 }
 
-.content {
-  margin-top: 10rpx;
-  margin-bottom: 10rpx;
-  font-size: 27rpx;
-  color: #1f2937;
-  line-height: 1.5;
+.list-padding {
+  padding: 32rpx;
 }
 
-.read-tag {
-  font-size: 24rpx;
-  border-radius: 999rpx;
-  padding: 8rpx 14rpx;
+.state-container {
+  padding-top: 200rpx;
+  display: flex;
+  justify-content: center;
 }
 
-.read {
-  background: #f3f4f6;
-  color: #6b7280;
-}
+.message-card {
+  background-color: #FFFFFF;
+  border-radius: 32rpx;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 4rpx 15rpx rgba(0, 0, 0, 0.02);
+  border-left: 8rpx solid transparent;
+  transition: all 0.2s;
 
-.unread {
-  background: #fee2e2;
-  color: #b91c1c;
+  &.unread {
+    border-left-color: #2563EB;
+    background-color: #F0F7FF;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20rpx;
+    position: relative;
+
+    .type-indicator {
+      width: 80rpx;
+      height: 80rpx;
+      border-radius: 20rpx;
+      background-color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 20rpx;
+      box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.03);
+    }
+
+    .title-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+
+      .msg-title {
+        font-size: 28rpx;
+        font-weight: 700;
+        color: #1E293B;
+      }
+
+      .msg-time {
+        font-size: 22rpx;
+        color: #94A3B8;
+      }
+    }
+
+    .unread-dot {
+      width: 16rpx;
+      height: 16rpx;
+      background-color: #EF4444;
+      border-radius: 8rpx;
+    }
+  }
+
+  .card-body {
+    .msg-content {
+      font-size: 26rpx;
+      color: #64748B;
+      line-height: 1.6;
+    }
+  }
 }
 </style>
-

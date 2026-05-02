@@ -1,8 +1,8 @@
 <template>
   <view class="page">
-    <view class="card">
+    <view class="header-section">
       <view class="title">成长总览</view>
-      <view class="sub-title" style="margin-top: 8rpx">围绕训练目标查看最近训练反馈和阶段评估</view>
+      <view class="subtitle">追踪孩子的每一个进步时刻</view>
 
       <scroll-view scroll-x class="child-scroll" v-if="children.length > 0">
         <view class="child-row">
@@ -19,47 +19,79 @@
       </scroll-view>
     </view>
 
-    <view v-if="loading" class="card">加载中...</view>
-    <view v-else-if="!overview" class="card">暂无成长数据</view>
-    <view v-else>
-      <view class="card">
-        <view class="row between">
-          <view class="title" style="font-size: 32rpx">{{ overview.studentName }}</view>
-          <view class="goal-badge">{{ overview.goalFocus || '未设置阶段目标' }}</view>
+    <view v-if="loading && !overview" class="state-container">
+      <up-loading-icon text="数据同步中..." size="32" color="#2563EB" />
+    </view>
+    
+    <view v-else-if="!overview" class="state-container">
+      <up-empty mode="data" text="暂无成长数据" />
+    </view>
+
+    <view v-else class="content-container">
+      <!-- Profile Card -->
+      <view class="overview-card">
+        <view class="card-header">
+          <view class="student-name">{{ overview.studentName }}</view>
+          <view class="goal-tag">{{ overview.goalFocus || '全面提升' }}</view>
         </view>
-        <view class="sub-title" style="margin-top: 12rpx">训练标签：{{ displayText(overview.trainingTags) }}</view>
-        <view class="sub-title">风险提示：{{ displayText(overview.riskNotes) }}</view>
-        <view class="sub-title">目标周期：{{ goalPeriodText }}</view>
+        <view class="tag-row">
+          <up-tag v-for="(tag, idx) in (overview.trainingTags || '').split(',').filter(t => t)" :key="idx" :text="tag" size="mini" type="info" plain shape="circle" class="tag-item" />
+        </view>
+        <view class="period-info">目标周期：{{ goalPeriodText }}</view>
       </view>
 
-      <view class="card" v-if="overview.latestEvaluation">
-        <view class="title" style="font-size: 30rpx">最新阶段评估</view>
-        <view class="sub-title" style="margin-top: 12rpx">周期：{{ overview.latestEvaluation.cycleName }}</view>
-        <view class="sub-title">出勤率：{{ formatRate(overview.latestEvaluation.attendanceRate) }}</view>
-        <view class="sub-title">体测变化：{{ displayText(overview.latestEvaluation.fitnessSummary) }}</view>
-        <view class="sub-title">教练评价：{{ displayText(overview.latestEvaluation.coachEvaluation) }}</view>
-        <view class="sub-title">下阶段计划：{{ displayText(overview.latestEvaluation.nextStagePlan) }}</view>
-        <view class="content" v-if="overview.latestEvaluation.parentReport">
-          {{ overview.latestEvaluation.parentReport }}
+      <!-- Latest Evaluation -->
+      <view class="section-title" v-if="overview.latestEvaluation">最新阶段评估</view>
+      <view class="evaluation-card" v-if="overview.latestEvaluation">
+        <view class="eval-header">
+          <text class="cycle-name">{{ overview.latestEvaluation.cycleName }}</text>
+          <view class="rate-box">
+            <text class="rate-label">出勤率</text>
+            <text class="rate-value">{{ formatRate(overview.latestEvaluation.attendanceRate) }}</text>
+          </view>
+        </view>
+        <view class="eval-body">
+          <view class="eval-item">
+            <text class="eval-label">体测变化：</text>
+            <text class="eval-text">{{ displayText(overview.latestEvaluation.fitnessSummary) }}</text>
+          </view>
+          <view class="eval-item">
+            <text class="eval-label">教练评价：</text>
+            <text class="eval-text">{{ displayText(overview.latestEvaluation.coachEvaluation) }}</text>
+          </view>
+          <view class="report-box" v-if="overview.latestEvaluation.parentReport">
+            <text class="report-text">{{ overview.latestEvaluation.parentReport }}</text>
+          </view>
         </view>
       </view>
 
-      <view class="card">
-        <view class="title" style="font-size: 30rpx">最近训练反馈</view>
-        <view v-if="overview.recentTrainingFeedback.length === 0" class="sub-title" style="margin-top: 12rpx">
-          暂无训练反馈
+      <!-- Recent Feedback -->
+      <view class="section-title">最近训练反馈</view>
+      <view v-if="overview.recentTrainingFeedback.length === 0" class="empty-inline">
+        暂无反馈记录
+      </view>
+      <view
+        v-for="item in overview.recentTrainingFeedback"
+        :key="item.id"
+        class="feedback-card"
+      >
+        <view class="feedback-header">
+          <text class="date">{{ item.trainingDate }}</text>
+          <text class="course">{{ item.trainingContent }}</text>
         </view>
-        <view
-          v-for="item in overview.recentTrainingFeedback"
-          :key="item.id"
-          class="feedback-item"
-        >
-          <view class="name">{{ item.trainingDate }} {{ item.trainingContent }}</view>
-          <view class="sub-title">课堂亮点：{{ displayText(item.highlightNote) }}</view>
-          <view class="sub-title">待改进点：{{ displayText(item.improvementNote) }}</view>
-          <view class="sub-title">家长配合：{{ displayText(item.parentAction) }}</view>
-          <view class="sub-title">下次建议：{{ displayText(item.nextStepSuggestion) }}</view>
-          <view class="content" v-if="item.aiSummary">{{ item.aiSummary }}</view>
+        <view class="feedback-grid">
+          <view class="grid-item">
+            <text class="item-label">表现亮点</text>
+            <text class="item-value">{{ displayText(item.highlightNote) }}</text>
+          </view>
+          <view class="grid-item">
+            <text class="item-label">提升点</text>
+            <text class="item-value">{{ displayText(item.improvementNote) }}</text>
+          </view>
+        </view>
+        <view class="ai-summary" v-if="item.aiSummary">
+          <up-icon name="chat-fill" size="24rpx" color="#3B82F6" />
+          <text class="ai-text">{{ item.aiSummary }}</text>
         </view>
       </view>
     </view>
@@ -68,7 +100,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { onLoad, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import {
   getParentGrowthOverview,
   listParentChildren,
@@ -99,12 +131,12 @@ function ensureLogin() {
 }
 
 function displayText(value?: string | null) {
-  return value && value.trim() ? value : '无'
+  return value && value.trim() ? value : '无记录'
 }
 
 function formatRate(rate?: number) {
-  if (rate == null) return '-'
-  return `${(Number(rate) * 100).toFixed(1)}%`
+  if (rate == null) return '0%'
+  return `${(Number(rate) * 100).toFixed(0)}%`
 }
 
 async function loadGrowth(studentId?: number) {
@@ -127,6 +159,11 @@ async function loadGrowth(studentId?: number) {
   }
 }
 
+onPullDownRefresh(async () => {
+  await loadGrowth()
+  uni.stopPullDownRefresh()
+})
+
 function selectChild(studentId: number) {
   if (studentId === currentStudentId.value) return
   loadGrowth(studentId)
@@ -145,54 +182,255 @@ onShow(() => {
 </script>
 
 <style scoped lang="scss">
+.page {
+  background-color: #F8FAFC;
+  min-height: 100vh;
+  padding-bottom: 60rpx;
+}
+
+.header-section {
+  background-color: #FFFFFF;
+  padding: 40rpx 32rpx;
+  border-bottom-left-radius: 40rpx;
+  border-bottom-right-radius: 40rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.02);
+
+  .title {
+    font-size: 44rpx;
+    font-weight: 800;
+    color: #1E293B;
+  }
+
+  .subtitle {
+    font-size: 26rpx;
+    color: #94A3B8;
+    margin-top: 10rpx;
+  }
+}
+
 .child-scroll {
-  margin-top: 20rpx;
+  margin-top: 32rpx;
   white-space: nowrap;
 }
 
 .child-row {
   display: inline-flex;
-  gap: 12rpx;
+  gap: 16rpx;
 }
 
 .child-chip {
-  border-radius: 999rpx;
-  padding: 10rpx 24rpx;
-  background: #eef2ff;
-  color: #4338ca;
-  font-size: 24rpx;
-}
-
-.child-chip.active {
-  background: #0f766e;
-  color: #ffffff;
-}
-
-.goal-badge {
-  padding: 10rpx 18rpx;
-  border-radius: 999rpx;
-  background: #ecfeff;
-  color: #0f766e;
-  font-size: 24rpx;
+  padding: 12rpx 32rpx;
+  background-color: #F1F5F9;
+  color: #64748B;
+  border-radius: 99rpx;
+  font-size: 26rpx;
   font-weight: 600;
+  transition: all 0.2s;
+
+  &.active {
+    background-color: #2563EB;
+    color: #FFFFFF;
+    box-shadow: 0 8rpx 15rpx rgba(37, 99, 235, 0.2);
+  }
 }
 
-.feedback-item + .feedback-item {
-  margin-top: 20rpx;
-  padding-top: 20rpx;
-  border-top: 1rpx solid #e5e7eb;
+.state-container {
+  padding-top: 160rpx;
+  display: flex;
+  justify-content: center;
 }
 
-.name {
-  font-size: 30rpx;
+.content-container {
+  padding: 32rpx;
+}
+
+.overview-card {
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  border-radius: 32rpx;
+  padding: 40rpx;
+  color: #FFFFFF;
+  margin-bottom: 40rpx;
+  box-shadow: 0 12rpx 30rpx rgba(37, 99, 235, 0.15);
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24rpx;
+
+    .student-name {
+      font-size: 40rpx;
+      font-weight: 800;
+    }
+
+    .goal-tag {
+      background-color: rgba(255, 255, 255, 0.2);
+      padding: 8rpx 24rpx;
+      border-radius: 99rpx;
+      font-size: 22rpx;
+      font-weight: 600;
+    }
+  }
+
+  .tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12rpx;
+    margin-bottom: 24rpx;
+    
+    .tag-item {
+      background-color: rgba(255, 255, 255, 0.1) !important;
+      border: none !important;
+      color: #FFFFFF !important;
+    }
+  }
+
+  .period-info {
+    font-size: 24rpx;
+    opacity: 0.8;
+  }
+}
+
+.section-title {
+  font-size: 32rpx;
   font-weight: 700;
-  margin-bottom: 10rpx;
+  color: #1E293B;
+  margin: 40rpx 0 24rpx 8rpx;
 }
 
-.content {
-  margin-top: 12rpx;
-  font-size: 27rpx;
-  color: #1f2937;
-  line-height: 1.6;
+.evaluation-card {
+  background-color: #FFFFFF;
+  border-radius: 32rpx;
+  padding: 32rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.02);
+
+  .eval-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32rpx;
+    padding-bottom: 24rpx;
+    border-bottom: 1rpx solid #F1F5F9;
+
+    .cycle-name {
+      font-size: 30rpx;
+      font-weight: 700;
+      color: #1E293B;
+    }
+
+    .rate-box {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+
+      .rate-label {
+        font-size: 20rpx;
+        color: #94A3B8;
+      }
+      .rate-value {
+        font-size: 32rpx;
+        font-weight: 800;
+        color: #10B981;
+      }
+    }
+  }
+
+  .eval-body {
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
+
+    .eval-item {
+      .eval-label {
+        font-size: 24rpx;
+        color: #94A3B8;
+        font-weight: 600;
+      }
+      .eval-text {
+        font-size: 26rpx;
+        color: #475569;
+      }
+    }
+
+    .report-box {
+      margin-top: 10rpx;
+      padding: 24rpx;
+      background-color: #F8FAFC;
+      border-radius: 20rpx;
+      border-left: 8rpx solid #E2E8F0;
+
+      .report-text {
+        font-size: 26rpx;
+        color: #334155;
+        line-height: 1.6;
+      }
+    }
+  }
+}
+
+.feedback-card {
+  background-color: #FFFFFF;
+  border-radius: 32rpx;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 4rpx 15rpx rgba(0, 0, 0, 0.02);
+
+  .feedback-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 24rpx;
+
+    .date {
+      font-size: 24rpx;
+      font-weight: 700;
+      color: #3B82F6;
+    }
+    .course {
+      font-size: 24rpx;
+      color: #94A3B8;
+    }
+  }
+
+  .feedback-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20rpx;
+    margin-bottom: 24rpx;
+
+    .grid-item {
+      .item-label {
+        font-size: 22rpx;
+        color: #94A3B8;
+        display: block;
+        margin-bottom: 8rpx;
+      }
+      .item-value {
+        font-size: 26rpx;
+        color: #1E293B;
+        font-weight: 600;
+      }
+    }
+  }
+
+  .ai-summary {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+    padding-top: 20rpx;
+    border-top: 1rpx dashed #F1F5F9;
+
+    .ai-text {
+      font-size: 24rpx;
+      color: #3B82F6;
+      font-style: italic;
+    }
+  }
+}
+
+.empty-inline {
+  padding: 40rpx;
+  text-align: center;
+  color: #CBD5E1;
+  font-size: 24rpx;
 }
 </style>

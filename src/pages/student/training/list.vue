@@ -1,79 +1,53 @@
 <template>
-  <view class="container">
-    <!-- Header Section -->
-    <view class="header row between">
-      <view class="title-section">
-        <text class="main-title">训练记录</text>
-        <view class="title-bar"></view>
-      </view>
-      <u-button 
-        size="mini" 
-        type="primary" 
-        plain 
-        shape="circle"
-        icon="reload"
-        :loading="loading" 
-        @click="loadData"
-        :customStyle="{ borderColor: '#F97316', color: '#F97316' }"
-      >刷新</u-button>
+  <view class="page">
+    <view v-if="loading && rows.length === 0" class="state-container">
+      <up-loading-icon text="加载中..." vertical color="#F97316"></up-loading-icon>
     </view>
-
-    <!-- Content Section -->
-    <view class="content">
-      <view v-if="loading" class="empty-state">
-        <u-loading-icon color="#F97316"></u-loading-icon>
-        <text class="empty-text">加载中...</text>
-      </view>
-      
-      <view v-else-if="rows.length === 0" class="empty-state">
-        <u-empty mode="list" text="暂无训练记录" icon="http://cdn.uviewui.com/uview/empty/list.png"></u-empty>
-      </view>
-
-      <view v-else>
-        <view v-for="item in rows" :key="item.id" class="training-card">
-          <view class="card-header row between">
-            <view class="course-name">{{ item.courseName }}</view>
-            <u-tag 
-              v-if="item.intensityLevel"
-              :text="item.intensityLevel" 
-              size="mini" 
-              :type="getIntensityType(item.intensityLevel)"
-              shape="circle"
-              plain
-            ></u-tag>
+    
+    <view v-else-if="rows.length === 0" class="state-container">
+      <up-empty mode="list" text="暂无训练记录" icon="http://cdn.uviewui.com/uview/empty/list.png"></up-empty>
+    </view>
+    
+    <view v-else class="list-container">
+      <view v-for="item in rows" :key="item.id" class="training-card">
+        <view class="card-header">
+          <view class="course-name">{{ item.courseName }}</view>
+          <up-tag 
+            v-if="item.intensityLevel" 
+            :text="item.intensityLevel" 
+            size="mini" 
+            :type="getIntensityType(item.intensityLevel)" 
+            plain 
+            shape="circle"
+          ></up-tag>
+        </view>
+        
+        <view class="card-body">
+          <view class="info-row">
+            <up-icon name="calendar" size="28rpx" color="#94A3B8"></up-icon>
+            <text class="info-text">{{ item.trainingDate || '-' }}</text>
+          </view>
+          <view class="info-row">
+            <up-icon name="clock" size="28rpx" color="#94A3B8"></up-icon>
+            <text class="info-text">{{ item.durationMinutes }} 分钟</text>
           </view>
           
-          <view class="info-row row">
-            <view class="info-item">
-              <u-icon name="calendar" color="#F97316" size="32rpx"></u-icon>
-              <text class="info-text">{{ item.trainingDate || '-' }}</text>
-            </view>
-            <view class="info-item margin-left">
-              <u-icon name="clock" color="#F97316" size="32rpx"></u-icon>
-              <text class="info-text">{{ item.durationMinutes }} 分钟</text>
-            </view>
-          </view>
-
           <view class="section-box">
-            <view class="section-title row">
-              <u-icon name="edit-pen" color="#F97316" size="32rpx"></u-icon>
-              <text>训练内容</text>
-            </view>
+            <view class="section-title">训练内容</view>
             <view class="section-content">{{ item.trainingContent || '暂无内容' }}</view>
           </view>
 
           <view class="section-box">
-            <view class="section-title row">
-              <u-icon name="chat" color="#F97316" size="32rpx"></u-icon>
-              <text>表现反馈</text>
-            </view>
+            <view class="section-title">表现反馈</view>
             <view class="section-content">{{ item.performanceSummary || '暂无反馈' }}</view>
           </view>
+        </view>
 
-          <view v-if="item.coachComment" class="coach-comment">
-            <view class="comment-header row">
-              <u-icon name="account-fill" color="#F97316" size="32rpx"></u-icon>
-              <text>教练评语</text>
+        <view class="card-footer" v-if="item.coachComment">
+          <view class="comment-section">
+            <view class="comment-header">
+              <up-icon name="chat" size="24rpx" color="#F97316"></up-icon>
+              <text class="comment-label">教练评语</text>
             </view>
             <view class="comment-text">{{ item.coachComment }}</view>
           </view>
@@ -85,7 +59,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { onLoad, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import { isLoggedIn } from '@/store/auth'
 import { showError } from '@/utils/error'
 import { listStudentTrainingRecords, type StudentTrainingRecord } from '@/api/modules/student'
@@ -119,6 +93,11 @@ async function loadData() {
   }
 }
 
+onPullDownRefresh(async () => {
+  await loadData()
+  uni.stopPullDownRefresh()
+})
+
 onLoad(() => {
   loadData()
 })
@@ -129,139 +108,108 @@ onShow(() => {
 </script>
 
 <style scoped lang="scss">
-.container {
+.page {
+  background-color: #f8fafc;
   min-height: 100vh;
-  background-color: #F8FAFC;
   padding: 32rpx;
 }
 
-.header {
-  margin-bottom: 40rpx;
-  
-  .title-section {
-    display: flex;
-    flex-direction: column;
-    
-    .main-title {
-      font-size: 40rpx;
-      font-weight: 800;
-      color: #1E293B;
-    }
-    
-    .title-bar {
-      width: 48rpx;
-      height: 8rpx;
-      background: #F97316;
-      border-radius: 4rpx;
-      margin-top: 8rpx;
-    }
-  }
+.state-container {
+  padding-top: 200rpx;
+  display: flex;
+  justify-content: center;
 }
 
-.empty-state {
+.list-container {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding-top: 200rpx;
-  
-  .empty-text {
-    margin-top: 20rpx;
-    color: #94A3B8;
-    font-size: 28rpx;
-  }
+  gap: 24rpx;
 }
 
 .training-card {
-  background: #FFFFFF;
+  background-color: #ffffff;
   border-radius: 24rpx;
   padding: 32rpx;
-  margin-bottom: 32rpx;
   box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.03);
-  border-top: 8rpx solid #F97316;
 
   .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 24rpx;
-    
+
     .course-name {
       font-size: 32rpx;
       font-weight: 700;
-      color: #1E293B;
+      color: #0f172a;
     }
   }
 
-  .info-row {
-    margin-bottom: 32rpx;
-    
-    .info-item {
+  .card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+
+    .info-row {
       display: flex;
       align-items: center;
       gap: 12rpx;
 
       .info-text {
         font-size: 26rpx;
-        color: #64748B;
+        color: #64748b;
       }
     }
-    
-    .margin-left {
-      margin-left: 40rpx;
+
+    .section-box {
+      margin-top: 16rpx;
+      
+      .section-title {
+        font-size: 24rpx;
+        font-weight: 600;
+        color: #94a3b8;
+        margin-bottom: 8rpx;
+        text-transform: uppercase;
+        letter-spacing: 1rpx;
+      }
+      
+      .section-content {
+        font-size: 26rpx;
+        color: #334155;
+        line-height: 1.6;
+        background: #f8fafc;
+        padding: 16rpx 24rpx;
+        border-radius: 12rpx;
+      }
     }
   }
 
-  .section-box {
-    margin-bottom: 24rpx;
-    
-    .section-title {
-      font-size: 28rpx;
-      font-weight: 600;
-      color: #334155;
-      margin-bottom: 12rpx;
-      gap: 8rpx;
-    }
-    
-    .section-content {
-      font-size: 26rpx;
-      color: #64748B;
-      line-height: 1.6;
-      background: #F8FAFC;
-      padding: 16rpx 24rpx;
-      border-radius: 12rpx;
-    }
-  }
-
-  .coach-comment {
-    margin-top: 32rpx;
+  .card-footer {
+    margin-top: 24rpx;
     padding-top: 24rpx;
-    border-top: 2rpx dashed #E2E8F0;
-    
-    .comment-header {
-      font-size: 28rpx;
-      font-weight: 600;
-      color: #F97316;
-      margin-bottom: 12rpx;
-      gap: 8rpx;
-    }
-    
-    .comment-text {
-      font-size: 26rpx;
-      color: #475569;
-      font-style: italic;
-      line-height: 1.6;
+    border-top: 1rpx solid #f1f5f9;
+
+    .comment-section {
+      .comment-header {
+        display: flex;
+        align-items: center;
+        gap: 8rpx;
+        margin-bottom: 8rpx;
+
+        .comment-label {
+          font-size: 24rpx;
+          font-weight: 600;
+          color: #f97316;
+        }
+      }
+      
+      .comment-text {
+        font-size: 26rpx;
+        color: #475569;
+        font-style: italic;
+        line-height: 1.6;
+      }
     }
   }
-}
-
-.row {
-  display: flex;
-  align-items: center;
-}
-
-.between {
-  justify-content: space-between;
-}
-
-.gap {
-  gap: 16rpx;
 }
 </style>

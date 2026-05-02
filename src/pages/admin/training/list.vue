@@ -1,82 +1,58 @@
 <template>
   <view class="page">
-    <!-- Sticky Search Header (Filters for Training Records) -->
     <view class="sticky-header">
-      <view class="filter-grid">
-        <view class="filter-item">
-          <picker :range="studentOptions" range-key="name" :value="studentIndex" @change="onStudentChange">
-            <view class="filter-picker">
-              <text class="filter-label">学员:</text>
-              <text class="filter-value u-line-1">{{ studentLabel }}</text>
-              <u-icon name="arrow-down" size="24rpx" color="#64748B" />
-            </view>
-          </picker>
-        </view>
-        <view class="filter-item">
-          <picker :range="courseOptions" range-key="name" :value="courseIndex" @change="onCourseChange">
-            <view class="filter-picker">
-              <text class="filter-label">课程:</text>
-              <text class="filter-value u-line-1">{{ courseLabel }}</text>
-              <u-icon name="arrow-down" size="24rpx" color="#64748B" />
-            </view>
-          </picker>
-        </view>
-      </view>
-
-      <view class="search-row" style="margin-top: 20rpx">
-        <view class="date-range">
-          <picker mode="date" :value="query.startDate" @change="onStartDateChange">
-            <view class="date-picker">
-              <text class="date-text">{{ query.startDate || '开始' }}</text>
-            </view>
-          </picker>
-          <text class="date-sep">-</text>
-          <picker mode="date" :value="query.endDate" @change="onEndDateChange">
-            <view class="date-picker">
-              <text class="date-text">{{ query.endDate || '结束' }}</text>
-            </view>
-          </picker>
+      <view class="search-row">
+        <view class="search-container">
+          <up-search
+            placeholder="搜索学员姓名"
+            v-model="query.studentName"
+            :show-action="false"
+            @search="handleSearch"
+            @clear="handleReset"
+            shape="round"
+            bg-color="#F1F5F9"
+            height="72rpx"
+          />
         </view>
         <view class="action-icons">
-          <view class="icon-btn" @click="handleReset">
-            <u-icon name="reload" size="36rpx" color="#64748B" />
-          </view>
           <view class="icon-btn add-btn" @click="goCreate">
-            <u-icon name="plus" size="36rpx" color="#FFFFFF" />
+            <up-icon name="plus" size="40rpx" color="#FFFFFF" />
           </view>
         </view>
       </view>
     </view>
 
-    <!-- List Content -->
     <scroll-view scroll-y class="list-scroll">
       <view v-if="loading && rows.length === 0" class="state-container">
-        <u-loading-icon text="正在加载记录..." size="32" />
+        <up-loading-icon text="正在加载训练..." size="32" color="#3B82F6" />
       </view>
 
       <view v-else-if="rows.length === 0" class="state-container">
-        <u-empty mode="data" text="暂无训练记录" />
+        <up-empty mode="data" text="暂无训练记录" />
       </view>
 
       <view v-else class="list-padding">
         <view v-for="item in rows" :key="item.id" class="list-card" @click="goDetail(item.id)">
           <view class="card-header">
             <text class="card-title">{{ item.studentName }}</text>
-            <u-tag :text="intensityText(item.intensityLevel)" :type="intensityTagType(item.intensityLevel)" size="mini" shape="circle" />
+            <up-tag :text="item.intensityLevel" :type="getIntensityType(item.intensityLevel)" size="mini" shape="circle" />
           </view>
           
-          <view class="card-meta">
-            <view class="meta-item">
-              <u-icon name="grid" size="24rpx" color="#94A3B8" />
-              <text class="meta-text">课程：{{ item.courseName }}</text>
+          <view class="card-body">
+            <view class="course-name">{{ item.courseName }}</view>
+            <view class="meta-info">
+              <view class="meta-item">
+                <up-icon name="calendar" size="24rpx" color="#94A3B8" />
+                <text class="meta-text">日期：{{ item.trainingDate }}</text>
+              </view>
+              <view class="meta-item">
+                <up-icon name="clock" size="24rpx" color="#94A3B8" />
+                <text class="meta-text">时长：{{ item.durationMinutes }}分钟</text>
+              </view>
             </view>
-            <view class="meta-item">
-              <u-icon name="calendar" size="24rpx" color="#94A3B8" />
-              <text class="meta-text">日期：{{ item.trainingDate }} ({{ item.durationMinutes }}分钟)</text>
-            </view>
-            <view class="meta-item">
-              <u-icon name="file-text" size="24rpx" color="#94A3B8" />
-              <text class="meta-text u-line-2">内容：{{ item.trainingContent }}</text>
+            <view v-if="item.performanceSummary" class="feedback-box">
+              <text class="feedback-label">表现：</text>
+              <text class="feedback-text">{{ item.performanceSummary }}</text>
             </view>
           </view>
 
@@ -94,39 +70,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
-import { onLoad, onShow } from '@dcloudio/uni-app'
-import { listTrainingRecords } from '@/api/modules/training'
-import { listCourses, type Course } from '@/api/modules/courses'
-import { listStudents, type Student } from '@/api/modules/students'
+import { reactive, ref } from 'vue'
+import { onLoad, onShow, onPullDownRefresh } from '@dcloudio/uni-app'
+import { listTrainingRecords, type TrainingRecord } from '@/api/modules/training'
 import { isLoggedIn } from '@/store/auth'
-import { clearDraft, loadDraft, saveDraft } from '@/utils/draft'
 import { showError } from '@/utils/error'
-import { findLabel, trainingIntensityOptions } from '@/constants/enums'
-import type { TrainingRecord } from '@/types/api'
 
-const QUERY_DRAFT_KEY = 'training.query'
-const defaults = {
-  studentId: undefined as number | undefined,
-  courseId: undefined as number | undefined,
-  startDate: '',
-  endDate: ''
-}
-
-const query = reactive({
-  ...defaults,
-  ...loadDraft(QUERY_DRAFT_KEY, defaults)
-})
-
+const query = reactive({ studentName: '' })
 const loading = ref(false)
 const rows = ref<TrainingRecord[]>([])
-const studentOptions = ref<Array<Student & { name: string }>>([{ id: 0, name: '全部学员' } as Student & { name: string }])
-const courseOptions = ref<Array<Course & { name: string }>>([{ id: 0, name: '全部课程' } as Course & { name: string }])
-
-const studentIndex = computed(() => studentOptions.value.findIndex(item => item.id === (query.studentId || 0)))
-const courseIndex = computed(() => courseOptions.value.findIndex(item => item.id === (query.courseId || 0)))
-const studentLabel = computed(() => studentOptions.value[studentIndex.value]?.name || '全部学员')
-const courseLabel = computed(() => courseOptions.value[courseIndex.value]?.name || '全部课程')
 
 function ensureLogin() {
   if (!isLoggedIn()) {
@@ -136,26 +88,10 @@ function ensureLogin() {
   return true
 }
 
-function intensityText(value: string) {
-  return findLabel(trainingIntensityOptions, value)
-}
-
-function intensityTagType(level: string) {
-  switch (level) {
-    case 'HIGH': return 'error'
-    case 'MEDIUM': return 'warning'
-    case 'LOW': return 'success'
-    default: return 'info'
-  }
-}
-
-async function loadOptions() {
-  const [students, courses] = await Promise.all([
-    listStudents({ page: 0, size: 200 }),
-    listCourses({ page: 0, size: 200 })
-  ])
-  studentOptions.value = [{ id: 0, name: '全部学员' } as Student & { name: string }, ...students.content]
-  courseOptions.value = [{ id: 0, name: '全部课程' } as Course & { name: string }, ...courses.content]
+function getIntensityType(level?: string) {
+  if (level?.includes('高')) return 'error'
+  if (level?.includes('中')) return 'warning'
+  return 'primary'
 }
 
 async function fetchData() {
@@ -163,44 +99,27 @@ async function fetchData() {
   loading.value = true
   try {
     const data = await listTrainingRecords({
-      studentId: query.studentId || undefined,
-      courseId: query.courseId || undefined,
-      startDate: query.startDate || undefined,
-      endDate: query.endDate || undefined
+      studentName: query.studentName.trim() || undefined
     })
-    rows.value = data || []
+    rows.value = data
   } catch (error) {
-    showError(error, '训练记录获取失败')
+    showError(error, '训练列表获取失败')
   } finally {
     loading.value = false
   }
 }
 
-function onStudentChange(event: any) {
-  const index = Number(event.detail.value)
-  query.studentId = studentOptions.value[index]?.id || undefined
-  fetchData()
-}
+onPullDownRefresh(async () => {
+  await fetchData()
+  uni.stopPullDownRefresh()
+})
 
-function onCourseChange(event: any) {
-  const index = Number(event.detail.value)
-  query.courseId = courseOptions.value[index]?.id || undefined
-  fetchData()
-}
-
-function onStartDateChange(event: any) {
-  query.startDate = event.detail.value
-  fetchData()
-}
-
-function onEndDateChange(event: any) {
-  query.endDate = event.detail.value
+function handleSearch() {
   fetchData()
 }
 
 function handleReset() {
-  Object.assign(query, defaults)
-  clearDraft(QUERY_DRAFT_KEY)
+  query.studentName = ''
   fetchData()
 }
 
@@ -208,30 +127,20 @@ function goCreate() {
   uni.navigateTo({ url: '/pages/admin/training/form?mode=create' })
 }
 
-function goDetail(id: number) {
-  uni.navigateTo({ url: `/pages/admin/training/detail?id=${id}` })
-}
-
 function goEdit(id: number) {
   uni.navigateTo({ url: `/pages/admin/training/form?mode=edit&id=${id}` })
 }
 
-watch(
-  () => ({ ...query }),
-  (value) => saveDraft(QUERY_DRAFT_KEY, value),
-  { deep: true }
-)
+function goDetail(id: number) {
+  uni.navigateTo({ url: `/pages/admin/training/detail?id=${id}` })
+}
 
-onLoad(async () => {
-  if (!ensureLogin()) return
-  await loadOptions()
-  await fetchData()
+onLoad(() => {
+  if (ensureLogin()) fetchData()
 })
 
 onShow(() => {
-  if (ensureLogin()) {
-    fetchData()
-  }
+  if (ensureLogin()) fetchData()
 })
 </script>
 
@@ -246,41 +155,10 @@ onShow(() => {
 .sticky-header {
   position: sticky;
   top: 0;
-  z-index: 100;
-  background-color: #FFFFFF;
-  padding: 24rpx 32rpx;
-  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.02);
-}
-
-.filter-grid {
-  display: flex;
-  gap: 16rpx;
-}
-
-.filter-item {
-  flex: 1;
-}
-
-.filter-picker {
-  background-color: #F1F5F9;
-  border-radius: 16rpx;
-  padding: 16rpx 20rpx;
-  display: flex;
-  align-items: center;
-  gap: 8rpx;
-}
-
-.filter-label {
-  font-size: 24rpx;
-  color: #64748B;
-  white-space: nowrap;
-}
-
-.filter-value {
-  flex: 1;
-  font-size: 26rpx;
-  font-weight: 600;
-  color: #0F172A;
+  z-index: 10;
+  background: #fff;
+  padding: 20rpx 32rpx;
+  border-bottom: 1rpx solid #f1f5f9;
 }
 
 .search-row {
@@ -289,36 +167,13 @@ onShow(() => {
   gap: 20rpx;
 }
 
-.date-range {
+.search-container {
   flex: 1;
-  display: flex;
-  align-items: center;
-  background-color: #F1F5F9;
-  border-radius: 16rpx;
-  padding: 0 16rpx;
-  height: 72rpx;
-}
-
-.date-picker {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-}
-
-.date-text {
-  font-size: 22rpx;
-  color: #475569;
-}
-
-.date-sep {
-  margin: 0 8rpx;
-  color: #94A3B8;
 }
 
 .action-icons {
   display: flex;
   align-items: center;
-  gap: 16rpx;
 }
 
 .icon-btn {
@@ -327,9 +182,7 @@ onShow(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #F1F5F9;
   border-radius: 16rpx;
-  
   &.add-btn {
     background-color: #3B82F6;
   }
@@ -341,7 +194,7 @@ onShow(() => {
 }
 
 .list-padding {
-  padding: 24rpx 32rpx 40rpx;
+  padding: 24rpx 0 40rpx;
 }
 
 .state-container {
@@ -354,71 +207,95 @@ onShow(() => {
   background-color: #FFFFFF;
   border-radius: 24rpx;
   padding: 32rpx;
-  margin-bottom: 24rpx;
-  box-shadow: 0 4rpx 12rpx rgba(15, 23, 42, 0.03);
-  transition: all 0.2s;
-
-  &:active {
-    transform: scale(0.99);
-    background-color: #F8FAFC;
-  }
+  margin: 0 32rpx 24rpx;
+  border: 1rpx solid #E2E8F0;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.02);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 20rpx;
+  align-items: center;
+  margin-bottom: 24rpx;
+
+  .card-title {
+    font-size: 32rpx;
+    font-weight: 700;
+    color: #0F172A;
+  }
 }
 
-.card-title {
-  font-size: 32rpx;
-  font-weight: 700;
-  color: #0F172A;
-  line-height: 1.4;
-}
-
-.card-meta {
+.card-body {
   display: flex;
   flex-direction: column;
-  gap: 12rpx;
-  margin-bottom: 24rpx;
-}
+  gap: 16rpx;
 
-.meta-item {
-  display: flex;
-  align-items: center;
-  gap: 8rpx;
-}
+  .course-name {
+    font-size: 28rpx;
+    font-weight: 600;
+    color: #374151;
+  }
 
-.meta-text {
-  font-size: 26rpx;
-  color: #64748B;
+  .meta-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24rpx;
+
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 10rpx;
+
+      .meta-text {
+        font-size: 24rpx;
+        color: #6B7280;
+      }
+    }
+  }
+
+  .feedback-box {
+    margin-top: 10rpx;
+    background-color: #F9FAFB;
+    padding: 16rpx 20rpx;
+    border-radius: 12rpx;
+
+    .feedback-label {
+      font-size: 24rpx;
+      font-weight: 600;
+      color: #4B5563;
+    }
+
+    .feedback-text {
+      font-size: 24rpx;
+      color: #6B7280;
+    }
+  }
 }
 
 .card-footer {
+  margin-top: 24rpx;
+  padding-top: 24rpx;
+  border-top: 2rpx solid #F1F5F9;
   display: flex;
   align-items: center;
-  border-top: 2rpx solid #F1F5F9;
-  padding-top: 24rpx;
-}
 
-.spacer {
-  flex: 1;
-}
+  .spacer {
+    flex: 1;
+  }
 
-.actions {
-  display: flex;
-  gap: 32rpx;
-}
+  .actions {
+    display: flex;
+    gap: 32rpx;
+  }
 
-.action-link {
-  font-size: 26rpx;
-  font-weight: 600;
-  color: #64748B;
-  
-  &.primary {
-    color: #3B82F6;
+  .action-link {
+    font-size: 26rpx;
+    font-weight: 600;
+    color: #64748B;
+
+    &.primary {
+      color: #3B82F6;
+    }
   }
 }
 </style>

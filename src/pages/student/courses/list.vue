@@ -1,75 +1,38 @@
 <template>
-  <view class="container">
-    <!-- Header Section -->
-    <view class="header row between">
-      <view class="title-section">
-        <text class="main-title">我的课程</text>
-        <view class="title-bar"></view>
-      </view>
-      <u-button 
-        size="mini" 
-        type="primary" 
-        plain 
-        shape="circle"
-        icon="reload"
-        :loading="loading" 
-        @click="loadData"
-        :customStyle="{ borderColor: '#F97316', color: '#F97316' }"
-      >刷新</u-button>
+  <view class="page">
+    <view v-if="loading && rows.length === 0" class="state-container">
+      <up-loading-icon text="加载中..." vertical color="#F97316"></up-loading-icon>
     </view>
+    
+    <view v-else-if="rows.length === 0" class="state-container">
+      <up-empty mode="list" text="暂无课程记录" icon="http://cdn.uviewui.com/uview/empty/list.png"></up-empty>
+    </view>
+    
+    <view v-else class="list-container">
+      <view v-for="item in rows" :key="item.id" class="course-card">
+        <view class="card-header">
+          <view class="course-name">{{ item.name }}</view>
+          <up-tag :text="item.status" size="mini" type="warning" plain shape="circle"></up-tag>
+        </view>
+        
+        <view class="card-body">
+          <view class="info-row">
+            <up-icon name="calendar" size="28rpx" color="#94A3B8"></up-icon>
+            <text class="info-text">{{ formatDateTime(item.startTime) }} ({{ item.durationMinutes }}分钟)</text>
+          </view>
+          <view class="info-row">
+            <up-icon name="account" size="28rpx" color="#94A3B8"></up-icon>
+            <text class="info-text">教练：{{ item.coachName }}</text>
+          </view>
+          <view class="info-row">
+            <up-icon name="map" size="28rpx" color="#94A3B8"></up-icon>
+            <text class="info-text">场地：{{ item.venue }}</text>
+          </view>
+        </view>
 
-    <!-- Content Section -->
-    <view class="content">
-      <view v-if="loading" class="empty-state">
-        <u-loading-icon color="#F97316"></u-loading-icon>
-        <text class="empty-text">加载中...</text>
-      </view>
-      
-      <view v-else-if="rows.length === 0" class="empty-state">
-        <u-empty mode="list" text="暂无课程记录" icon="http://cdn.uviewui.com/uview/empty/list.png"></u-empty>
-      </view>
-
-      <view v-else>
-        <view v-for="item in rows" :key="item.id" class="course-card">
-          <view class="card-header row between">
-            <view class="course-name">{{ item.name }}</view>
-            <u-tag 
-              :text="item.status" 
-              size="mini" 
-              :type="getStatusType(item.status)"
-              shape="circle"
-              plain
-            ></u-tag>
-          </view>
-          
-          <view class="info-grid">
-            <view class="info-item">
-              <u-icon name="calendar" color="#F97316" size="32rpx"></u-icon>
-              <text class="info-text">{{ formatDateTime(item.startTime) }}</text>
-            </view>
-            <view class="info-item">
-              <u-icon name="clock" color="#F97316" size="32rpx"></u-icon>
-              <text class="info-text">{{ item.durationMinutes }} 分钟</text>
-            </view>
-            <view class="info-item">
-              <u-icon name="account" color="#F97316" size="32rpx"></u-icon>
-              <text class="info-text">{{ item.coachName }} 教练</text>
-            </view>
-            <view class="info-item">
-              <u-icon name="map" color="#F97316" size="32rpx"></u-icon>
-              <text class="info-text">{{ item.venue }}</text>
-            </view>
-          </view>
-
-          <view class="card-footer row gap">
-            <u-tag v-if="item.bookingStatus" :text="'预约: ' + item.bookingStatus" size="mini" type="info" plain></u-tag>
-            <u-tag v-if="item.checkinStatus" :text="'签到: ' + item.checkinStatus" size="mini" type="success" plain></u-tag>
-          </view>
-          
-          <view v-if="item.description" class="description-box">
-            <u-icon name="info-circle" color="#64748B" size="28rpx"></u-icon>
-            <text class="description-text">{{ item.description }}</text>
-          </view>
+        <view class="card-footer" v-if="item.bookingStatus || item.checkinStatus">
+          <up-tag v-if="item.bookingStatus" :text="'预约:' + item.bookingStatus" size="mini" type="info" plain></up-tag>
+          <up-tag v-if="item.checkinStatus" :text="'签到:' + item.checkinStatus" size="mini" :type="item.checkinStatus === 'CHECKED_IN' ? 'success' : 'info'" plain style="margin-left: 12rpx"></up-tag>
         </view>
       </view>
     </view>
@@ -78,7 +41,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { onLoad, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import { listStudentCourses, type StudentCourse } from '@/api/modules/student'
 import { isLoggedIn } from '@/store/auth'
 import { showError } from '@/utils/error'
@@ -99,13 +62,6 @@ function formatDateTime(value?: string) {
   return value.replace('T', ' ').slice(0, 16)
 }
 
-function getStatusType(status: string) {
-  if (status.includes('已完成') || status.includes('Finished')) return 'success'
-  if (status.includes('取消') || status.includes('Canceled')) return 'error'
-  if (status.includes('进行') || status.includes('Progress')) return 'warning'
-  return 'primary'
-}
-
 async function loadData() {
   if (!ensureLogin()) return
   loading.value = true
@@ -118,6 +74,11 @@ async function loadData() {
   }
 }
 
+onPullDownRefresh(async () => {
+  await loadData()
+  uni.stopPullDownRefresh()
+})
+
 onLoad(() => {
   loadData()
 })
@@ -128,116 +89,66 @@ onShow(() => {
 </script>
 
 <style scoped lang="scss">
-.container {
+.page {
+  background-color: #f8fafc;
   min-height: 100vh;
-  background-color: #F8FAFC;
   padding: 32rpx;
 }
 
-.header {
-  margin-bottom: 40rpx;
-  
-  .title-section {
-    display: flex;
-    flex-direction: column;
-    
-    .main-title {
-      font-size: 40rpx;
-      font-weight: 800;
-      color: #1E293B;
-    }
-    
-    .title-bar {
-      width: 48rpx;
-      height: 8rpx;
-      background: #F97316;
-      border-radius: 4rpx;
-      margin-top: 8rpx;
-    }
-  }
+.state-container {
+  padding-top: 200rpx;
+  display: flex;
+  justify-content: center;
 }
 
-.empty-state {
+.list-container {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding-top: 200rpx;
-  
-  .empty-text {
-    margin-top: 20rpx;
-    color: #94A3B8;
-    font-size: 28rpx;
-  }
+  gap: 24rpx;
 }
 
 .course-card {
-  background: #FFFFFF;
+  background-color: #ffffff;
   border-radius: 24rpx;
   padding: 32rpx;
-  margin-bottom: 32rpx;
   box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.03);
-  border-left: 8rpx solid #F97316;
 
   .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 24rpx;
-    
+
     .course-name {
       font-size: 32rpx;
       font-weight: 700;
-      color: #1E293B;
+      color: #0f172a;
     }
   }
 
-  .info-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20rpx;
-    margin-bottom: 24rpx;
+  .card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
 
-    .info-item {
+    .info-row {
       display: flex;
       align-items: center;
       gap: 12rpx;
 
       .info-text {
         font-size: 26rpx;
-        color: #64748B;
+        color: #64748b;
       }
     }
   }
 
   .card-footer {
+    margin-top: 24rpx;
     padding-top: 24rpx;
-    border-top: 1rpx solid #F1F5F9;
-  }
-  
-  .description-box {
-    margin-top: 20rpx;
-    padding: 16rpx;
-    background: #F8FAFC;
-    border-radius: 12rpx;
+    border-top: 1rpx solid #f1f5f9;
     display: flex;
-    gap: 12rpx;
-    
-    .description-text {
-      font-size: 24rpx;
-      color: #64748B;
-      line-height: 1.5;
-    }
+    justify-content: flex-end;
   }
-}
-
-.row {
-  display: flex;
-  align-items: center;
-}
-
-.between {
-  justify-content: space-between;
-}
-
-.gap {
-  gap: 16rpx;
 }
 </style>

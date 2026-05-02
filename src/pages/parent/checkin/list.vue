@@ -1,30 +1,30 @@
 <template>
   <view class="page">
-    <view class="card row between">
-      <view class="title" style="font-size: 30rpx">签到记录</view>
-      <u-button size="small" type="primary" text="刷新" @click="fetchData" />
+    <view v-if="loading && rows.length === 0" class="state-container">
+      <up-loading-icon text="正在加载..." size="32" color="#2563EB" />
     </view>
 
-    <view class="card" v-if="pendingBookings.length > 0">
-      <view class="title" style="font-size: 28rpx">待签到预约</view>
-      <view v-for="item in pendingBookings" :key="item.id" class="pending-item">
-        <view>
-          <view class="name">{{ item.courseName }}</view>
-          <view class="sub-title">学员：{{ item.studentName }}</view>
+    <view v-else-if="rows.length === 0" class="state-container">
+      <up-empty mode="list" text="暂无签到记录" />
+    </view>
+
+    <view v-else class="list-padding">
+      <view v-for="item in rows" :key="item.id" class="checkin-card">
+        <view class="card-header">
+          <text class="course-name">{{ item.courseName }}</text>
+          <up-tag text="已到课" type="success" size="mini" shape="circle" />
         </view>
-        <u-button size="mini" type="primary" text="签到" @click="handleQuickCheckin(item.id)" />
-      </view>
-    </view>
-
-    <view v-if="loading" class="card">加载中...</view>
-    <view v-else-if="checkins.length === 0" class="card">暂无签到记录</view>
-    <view v-else>
-      <view v-for="record in checkins" :key="record.id" class="card">
-        <view class="name">{{ record.courseName }}</view>
-        <view class="sub-title" style="margin-top: 8rpx">学员：{{ record.studentName }}</view>
-        <view class="sub-title">签到日期：{{ record.attendanceDate }}</view>
-        <view class="sub-title">状态：{{ statusText(record.status) }}</view>
-        <view class="sub-title" v-if="record.note">备注：{{ record.note }}</view>
+        
+        <view class="card-body">
+          <view class="meta-item">
+            <text class="meta-label">签到学员：</text>
+            <text class="meta-value">{{ item.studentName }}</text>
+          </view>
+          <view class="meta-item">
+            <text class="meta-label">签到时间：</text>
+            <text class="meta-value">{{ formatDateTime(item.checkinTime) }}</text>
+          </view>
+        </view>
       </view>
     </view>
   </view>
@@ -32,20 +32,14 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { onLoad, onShow } from '@dcloudio/uni-app'
-import {
-  createParentCheckin,
-  listParentBookings,
-  listParentCheckins,
-  type ParentBooking
-} from '@/api/modules/parent'
-import type { AttendanceRecord } from '@/types/parent'
+import { onLoad, onShow, onPullDownRefresh } from '@dcloudio/uni-app'
+import { listMyCheckins } from '@/api/modules/student'
+import type { AttendanceRecord } from '@/api/modules/attendances'
 import { isLoggedIn } from '@/store/auth'
-import { showError, showSuccess } from '@/utils/error'
+import { showError } from '@/utils/error'
 
 const loading = ref(false)
-const checkins = ref<AttendanceRecord[]>([])
-const pendingBookings = ref<ParentBooking[]>([])
+const rows = ref<AttendanceRecord[]>([])
 
 function ensureLogin() {
   if (!isLoggedIn()) {
@@ -55,52 +49,94 @@ function ensureLogin() {
   return true
 }
 
-function statusText(status: string) {
-  return status === 'PRESENT' ? '到课' : status
+function formatDateTime(value?: string) {
+  if (!value) return '-'
+  return value.replace('T', ' ').slice(0, 16)
 }
 
-async function fetchData() {
+async function loadData() {
   if (!ensureLogin()) return
   loading.value = true
   try {
-    const [checkinRows, bookingRows] = await Promise.all([listParentCheckins(), listParentBookings()])
-    checkins.value = checkinRows
-    pendingBookings.value = bookingRows.filter(item => item.bookingStatus === 'BOOKED' && item.checkinStatus !== 'CHECKED_IN')
+    rows.value = await listMyCheckins()
   } catch (error) {
-    showError(error, '签到数据获取失败')
+    showError(error, '签到记录加载失败')
   } finally {
     loading.value = false
   }
 }
 
-async function handleQuickCheckin(bookingId: number) {
-  try {
-    await createParentCheckin({ bookingId })
-    showSuccess('签到成功')
-    fetchData()
-  } catch (error) {
-    showError(error, '签到失败')
-  }
-}
+onPullDownRefresh(async () => {
+  await loadData()
+  uni.stopPullDownRefresh()
+})
 
-onLoad(fetchData)
-onShow(fetchData)
+onLoad(() => {
+  loadData()
+})
+
+onShow(() => {
+  loadData()
+})
 </script>
 
 <style scoped lang="scss">
-.name {
-  font-size: 30rpx;
-  font-weight: 700;
+.page {
+  background-color: #F8FAFC;
+  min-height: 100vh;
 }
 
-.pending-item {
-  margin-top: 12rpx;
-  border: 1rpx solid #e5e7eb;
-  border-radius: 12rpx;
-  padding: 14rpx;
+.list-padding {
+  padding: 32rpx;
+}
+
+.state-container {
+  padding-top: 200rpx;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+}
+
+.checkin-card {
+  background-color: #FFFFFF;
+  border-radius: 32rpx;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 4rpx 15rpx rgba(0, 0, 0, 0.02);
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24rpx;
+
+    .course-name {
+      font-size: 30rpx;
+      font-weight: 700;
+      color: #1E293B;
+    }
+  }
+
+  .card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+
+    .meta-item {
+      display: flex;
+      align-items: center;
+
+      .meta-label {
+        font-size: 24rpx;
+        color: #94A3B8;
+        width: 140rpx;
+      }
+
+      .meta-value {
+        font-size: 26rpx;
+        color: #475569;
+        font-weight: 600;
+      }
+    }
+  }
 }
 </style>
-

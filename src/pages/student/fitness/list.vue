@@ -1,56 +1,32 @@
 <template>
-  <view class="container">
-    <!-- Header Section -->
-    <view class="header row between">
-      <view class="title-section">
-        <text class="main-title">体测记录</text>
-        <view class="title-bar"></view>
-      </view>
-      <u-button 
-        size="mini" 
-        type="primary" 
-        plain 
-        shape="circle"
-        icon="reload"
-        :loading="loading" 
-        @click="loadData"
-        :customStyle="{ borderColor: '#F97316', color: '#F97316' }"
-      >刷新</u-button>
+  <view class="page">
+    <view v-if="loading && rows.length === 0" class="state-container">
+      <up-loading-icon text="加载中..." vertical color="#F97316"></up-loading-icon>
     </view>
-
-    <!-- Content Section -->
-    <view class="content">
-      <view v-if="loading" class="empty-state">
-        <u-loading-icon color="#F97316"></u-loading-icon>
-        <text class="empty-text">加载中...</text>
-      </view>
-      
-      <view v-else-if="rows.length === 0" class="empty-state">
-        <u-empty mode="list" text="暂无体测记录" icon="http://cdn.uviewui.com/uview/empty/list.png"></u-empty>
-      </view>
-
-      <view v-else>
-        <view v-for="item in rows" :key="item.id" class="fitness-card">
-          <view class="card-header row between">
-            <view class="item-name row">
-              <u-icon :name="getFitnessIcon(item.itemName)" color="#F97316" size="40rpx"></u-icon>
-              <text class="margin-left-sm">{{ item.itemName }}</text>
-            </view>
-            <view class="test-date">{{ item.testDate || '-' }}</view>
+    
+    <view v-else-if="rows.length === 0" class="state-container">
+      <up-empty mode="list" text="暂无体测记录" icon="http://cdn.uviewui.com/uview/empty/list.png"></up-empty>
+    </view>
+    
+    <view v-else class="list-container">
+      <view v-for="item in rows" :key="item.id" class="fitness-card">
+        <view class="card-header">
+          <view class="item-name">
+            <up-icon :name="getFitnessIcon(item.itemName)" size="36rpx" color="#F97316"></up-icon>
+            <text class="name-text">{{ item.itemName }}</text>
           </view>
-          
-          <view class="result-section row center">
-            <view class="result-value">{{ item.testValue }}</view>
-            <view class="result-unit">{{ item.unit }}</view>
+          <view class="test-date">{{ item.testDate || '-' }}</view>
+        </view>
+        
+        <view class="card-body">
+          <view class="result-display">
+            <text class="value">{{ item.testValue }}</text>
+            <text class="unit">{{ item.unit }}</text>
           </view>
 
-          <view v-if="item.comment" class="comment-box">
-            <view class="comment-label">说明</view>
-            <view class="comment-text">{{ item.comment }}</view>
-          </view>
-          
-          <view class="card-bg-icon">
-            <u-icon :name="getFitnessIcon(item.itemName)" color="#F1F5F9" size="120rpx"></u-icon>
+          <view class="comment-box" v-if="item.comment">
+            <view class="box-title">体测说明</view>
+            <view class="box-text">{{ item.comment }}</view>
           </view>
         </view>
       </view>
@@ -60,7 +36,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { onLoad, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import { isLoggedIn } from '@/store/auth'
 import { showError } from '@/utils/error'
 import { listStudentFitnessTests, type StudentFitnessRecord } from '@/api/modules/student'
@@ -77,7 +53,7 @@ function ensureLogin() {
 }
 
 function getFitnessIcon(name: string) {
-  if (name.includes('跑') || name.includes('Run')) return 'car' // uview-plus might not have many sports icons, using generic ones
+  if (name.includes('跑') || name.includes('Run')) return 'car'
   if (name.includes('跳') || name.includes('Jump')) return 'level'
   if (name.includes('力量') || name.includes('Power')) return 'integral'
   if (name.includes('柔韧') || name.includes('Flex')) return 'heart'
@@ -96,6 +72,11 @@ async function loadData() {
   }
 }
 
+onPullDownRefresh(async () => {
+  await loadData()
+  uni.stopPullDownRefresh()
+})
+
 onLoad(() => {
   loadData()
 })
@@ -106,144 +87,98 @@ onShow(() => {
 </script>
 
 <style scoped lang="scss">
-.container {
+.page {
+  background-color: #f8fafc;
   min-height: 100vh;
-  background-color: #F8FAFC;
   padding: 32rpx;
 }
 
-.header {
-  margin-bottom: 40rpx;
-  
-  .title-section {
-    display: flex;
-    flex-direction: column;
-    
-    .main-title {
-      font-size: 40rpx;
-      font-weight: 800;
-      color: #1E293B;
-    }
-    
-    .title-bar {
-      width: 48rpx;
-      height: 8rpx;
-      background: #F97316;
-      border-radius: 4rpx;
-      margin-top: 8rpx;
-    }
-  }
+.state-container {
+  padding-top: 200rpx;
+  display: flex;
+  justify-content: center;
 }
 
-.empty-state {
+.list-container {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding-top: 200rpx;
-  
-  .empty-text {
-    margin-top: 20rpx;
-    color: #94A3B8;
-    font-size: 28rpx;
-  }
+  gap: 24rpx;
 }
 
 .fitness-card {
-  background: #FFFFFF;
+  background-color: #ffffff;
   border-radius: 24rpx;
-  padding: 32rpx;
-  margin-bottom: 32rpx;
+  padding: 40rpx 32rpx;
   box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.03);
   position: relative;
   overflow: hidden;
 
   .card-header {
-    margin-bottom: 40rpx;
-    position: relative;
-    z-index: 1;
-    
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32rpx;
+
     .item-name {
-      font-size: 32rpx;
-      font-weight: 700;
-      color: #1E293B;
+      display: flex;
+      align-items: center;
       gap: 12rpx;
+
+      .name-text {
+        font-size: 32rpx;
+        font-weight: 700;
+        color: #0f172a;
+      }
     }
-    
+
     .test-date {
       font-size: 24rpx;
-      color: #94A3B8;
+      color: #94a3b8;
     }
   }
 
-  .result-section {
-    margin-bottom: 40rpx;
-    position: relative;
-    z-index: 1;
-    display: flex;
-    align-items: baseline;
-    justify-content: center;
-    
-    .result-value {
-      font-size: 72rpx;
-      font-weight: 800;
-      color: #F97316;
-      font-family: 'DIN Alternate', sans-serif;
+  .card-body {
+    .result-display {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      margin-bottom: 32rpx;
+      
+      .value {
+        font-size: 72rpx;
+        font-weight: 800;
+        color: #f97316;
+        font-family: 'DIN Alternate', sans-serif;
+      }
+      
+      .unit {
+        font-size: 28rpx;
+        color: #64748b;
+        margin-left: 12rpx;
+        font-weight: 600;
+      }
     }
-    
-    .result-unit {
-      font-size: 28rpx;
-      color: #64748B;
-      margin-left: 12rpx;
-      font-weight: 600;
+
+    .comment-box {
+      background: #f8fafc;
+      padding: 20rpx 24rpx;
+      border-radius: 16rpx;
+      
+      .box-title {
+        font-size: 20rpx;
+        font-weight: 600;
+        color: #94a3b8;
+        margin-bottom: 8rpx;
+        text-transform: uppercase;
+        letter-spacing: 2rpx;
+      }
+      
+      .box-text {
+        font-size: 26rpx;
+        color: #475569;
+        line-height: 1.5;
+      }
     }
   }
-
-  .comment-box {
-    background: #F8FAFC;
-    padding: 20rpx 24rpx;
-    border-radius: 16rpx;
-    position: relative;
-    z-index: 1;
-    
-    .comment-label {
-      font-size: 22rpx;
-      color: #94A3B8;
-      margin-bottom: 8rpx;
-      text-transform: uppercase;
-      letter-spacing: 2rpx;
-    }
-    
-    .comment-text {
-      font-size: 26rpx;
-      color: #475569;
-      line-height: 1.5;
-    }
-  }
-  
-  .card-bg-icon {
-    position: absolute;
-    right: -20rpx;
-    bottom: -20rpx;
-    opacity: 0.5;
-    z-index: 0;
-  }
-}
-
-.row {
-  display: flex;
-  align-items: center;
-}
-
-.between {
-  justify-content: space-between;
-}
-
-.center {
-  justify-content: center;
-}
-
-.margin-left-sm {
-  margin-left: 8rpx;
 }
 </style>
