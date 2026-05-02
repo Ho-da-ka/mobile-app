@@ -33,8 +33,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onLoad, onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import { listMyCheckins } from '@/api/modules/student'
-import type { AttendanceRecord } from '@/api/modules/attendances'
+import { listParentCheckins } from '@/api/modules/parent'
+import type { AttendanceRecord } from '@/types/parent'
 import { isLoggedIn } from '@/store/auth'
 import { showError } from '@/utils/error'
 
@@ -58,7 +58,7 @@ async function loadData() {
   if (!ensureLogin()) return
   loading.value = true
   try {
-    rows.value = await listMyCheckins()
+    rows.value = await listParentCheckins()
   } catch (error) {
     showError(error, '签到记录加载失败')
   } finally {

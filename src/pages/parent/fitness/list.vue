@@ -33,8 +33,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onLoad, onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import { listMyFitnessRecords } from '@/api/modules/student'
-import type { FitnessRecord } from '@/api/modules/fitness'
+import { listParentFitness } from '@/api/modules/parent'
+import type { FitnessTestRecord as FitnessRecord } from '@/types/parent'
 import { isLoggedIn } from '@/store/auth'
 import { showError } from '@/utils/error'
 
@@ -53,7 +53,7 @@ async function loadData() {
   if (!ensureLogin()) return
   loading.value = true
   try {
-    rows.value = await listMyFitnessRecords()
+    rows.value = await listParentFitness()
   } catch (error) {
     showError(error, '获取体测记录失败')
   } finally {

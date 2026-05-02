@@ -43,7 +43,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onLoad, onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import { listMyChildren, type ParentHomeChild } from '@/api/modules/student'
+import { listParentChildren, type ParentChild as ParentHomeChild } from '@/api/modules/parent'
 import { isLoggedIn } from '@/store/auth'
 import { showError } from '@/utils/error'
 
@@ -62,7 +62,7 @@ async function fetchData() {
   if (loading.value) return
   loading.value = true
   try {
-    rows.value = await listMyChildren()
+    rows.value = await listParentChildren()
   } catch (error) {
     showError(error, '获取孩子列表失败')
   } finally {

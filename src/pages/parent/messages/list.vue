@@ -32,8 +32,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onLoad, onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import { listMyMessages } from '@/api/modules/student'
-import type { ParentHomeMessage } from '@/api/modules/student'
+import { listParentMessages } from '@/api/modules/parent'
+import type { ParentMessage as ParentHomeMessage } from '@/api/modules/parent'
 import { isLoggedIn } from '@/store/auth'
 import { showError } from '@/utils/error'
 
@@ -60,7 +60,7 @@ async function loadData() {
   if (!ensureLogin()) return
   loading.value = true
   try {
-    rows.value = await listMyMessages()
+    rows.value = await listParentMessages()
   } catch (error) {
     showError(error, '获取消息失败')
   } finally {

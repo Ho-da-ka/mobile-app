@@ -37,7 +37,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onLoad, onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import { listMyBookings, type ParentHomeBooking } from '@/api/modules/student'
+import { listParentBookings } from '@/api/modules/parent'
+import type { ParentBooking as ParentHomeBooking } from '@/api/modules/parent'
 import { isLoggedIn } from '@/store/auth'
 import { showError } from '@/utils/error'
 
@@ -61,7 +62,7 @@ async function loadData() {
   if (!ensureLogin()) return
   loading.value = true
   try {
-    rows.value = await listMyBookings()
+    rows.value = await listParentBookings()
   } catch (error) {
     showError(error, '预约记录加载失败')
   } finally {
