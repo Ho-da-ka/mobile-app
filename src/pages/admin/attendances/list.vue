@@ -57,7 +57,7 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { onLoad, onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import { listAttendances, type AttendanceRecord } from '@/api/modules/attendances'
+import { listAttendances, type AttendanceRecord } from '@/api/modules/attendance'
 import { isLoggedIn } from '@/store/auth'
 import { showError } from '@/utils/error'
 
