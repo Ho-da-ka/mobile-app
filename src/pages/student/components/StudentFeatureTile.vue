@@ -12,7 +12,7 @@ const emit = defineEmits(['click']);
 <template>
   <view class="feature-tile" @click="emit('click')">
     <view class="icon-wrapper" :style="{ backgroundColor: color + '10' }">
-      <u-icon :name="icon" size="48rpx" :color="color || '#F97316'" />
+      <up-icon :name="icon" size="48rpx" :color="color || '#F97316'" />
     </view>
     <view class="title">{{ title }}</view>
   </view>

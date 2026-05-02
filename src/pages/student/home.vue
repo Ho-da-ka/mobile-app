@@ -1,67 +1,77 @@
 <template>
-  <view class="page">
-    <!-- Header: Minimalist Greeting -->
-    <view class="header">
-      <view class="greeting">
-        <text class="hi">你好,</text>
-        <text class="name">{{ profile?.name || '学员' }}</text>
-      </view>
-      <view class="date-tag">{{ todayDisplay }}</view>
+  <view class="page student-home">
+    <view v-if="loading && !dashboard" class="state-container loading-state">
+      <up-loading-icon text="同步训练数据..." vertical color="#F97316"></up-loading-icon>
+    </view>
+    
+    <view v-else-if="errorText" class="state-container error-state">
+      <view class="state-title">同步失败</view>
+      <view class="state-copy">{{ errorText }}</view>
+      <up-button type="warning" shape="circle" text="重新同步" @click="loadDashboard" />
     </view>
 
-    <!-- Top: Action Hub -->
-    <view class="content">
-      <StudentActionHub 
-        v-if="dashboard"
-        :progress="dashboard.progress"
-        :today-course="dashboard.todayCourse"
-        @action="handleCourseAction"
-      />
-      <view v-else-if="loading" class="loading-placeholder">
-        <u-loading-icon color="#F97316" />
+    <template v-else>
+      <!-- Header: Minimalist Greeting -->
+      <view class="header">
+        <view class="greeting">
+          <text class="hi">你好,</text>
+          <text class="name">{{ profile?.name || '学员' }}</text>
+        </view>
+        <view class="date-tag">{{ todayDisplay }}</view>
       </view>
 
-      <!-- Middle: Feature Grid -->
-      <view class="feature-grid">
-        <StudentFeatureTile 
-          title="我的课程" 
-          icon="calendar" 
-          color="#3B82F6" 
-          @click="goCourses" 
+      <!-- Content Area -->
+      <view class="content">
+        <!-- Top: Action Hub -->
+        <StudentActionHub 
+          v-if="dashboard"
+          :progress="dashboard.progress"
+          :today-course="dashboard.todayCourse"
+          @action="handleCourseAction"
         />
-        <StudentFeatureTile 
-          title="历史记录" 
-          icon="order" 
-          color="#8B5CF6" 
-          @click="goTraining" 
-        />
-        <StudentFeatureTile 
-          title="体测报告" 
-          icon="file-text" 
-          color="#10B981" 
-          @click="goFitness" 
-        />
-      </view>
 
-      <!-- Bottom: Subtle Footer -->
-      <view class="footer-actions">
-        <view class="action-item" @click="loadDashboard">
-          <u-icon name="reload" size="32rpx" color="#94A3B8" />
-          <text>刷新数据</text>
+        <!-- Middle: Feature Grid -->
+        <view class="feature-grid">
+          <StudentFeatureTile 
+            title="我的课程" 
+            icon="calendar" 
+            color="#3B82F6" 
+            @click="goCourses" 
+          />
+          <StudentFeatureTile 
+            title="训练记录" 
+            icon="order" 
+            color="#8B5CF6" 
+            @click="goTraining" 
+          />
+          <StudentFeatureTile 
+            title="体测报告" 
+            icon="file-text" 
+            color="#10B981" 
+            @click="goFitness" 
+          />
         </view>
-        <view class="divider"></view>
-        <view class="action-item" @click="handleLogout">
-          <u-icon name="level" size="32rpx" color="#94A3B8" />
-          <text>退出登录</text>
+
+        <!-- Bottom: Subtle Footer -->
+        <view class="footer-actions">
+          <view class="action-item" @click="loadDashboard">
+            <up-icon name="reload" size="32rpx" color="#94A3B8" />
+            <text>刷新数据</text>
+          </view>
+          <view class="divider"></view>
+          <view class="action-item" @click="handleLogout">
+            <up-icon name="level" size="32rpx" color="#94A3B8" />
+            <text>退出登录</text>
+          </view>
         </view>
       </view>
-    </view>
+    </template>
   </view>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { onLoad, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import { logout } from '@/api/modules/auth'
 import {
   getStudentProfile,
@@ -78,6 +88,7 @@ import { buildStudentHomeDashboard } from '@/utils/student-home'
 import type { StudentHomeDashboard } from '@/types/student-home'
 
 const loading = ref(false)
+const errorText = ref('')
 const profile = ref<StudentProfile | null>(null)
 const dashboard = ref<StudentHomeDashboard | null>(null)
 
@@ -97,6 +108,7 @@ function ensureLogin() {
 async function loadDashboard() {
   if (!ensureLogin()) return
   loading.value = true
+  errorText.value = ''
   try {
     const [profileData, courses, trainings, fitnessTests] = await Promise.all([
       getStudentProfile(),
@@ -111,17 +123,22 @@ async function loadDashboard() {
       fitnessTests
     })
   } catch (error) {
-    showError(error, '数据加载失败')
+    errorText.value = '无法连接到教务系统，请检查网络。'
+    showError(error, '同步失败')
   } finally {
     loading.value = false
   }
 }
 
+onPullDownRefresh(async () => {
+  await loadDashboard()
+  uni.stopPullDownRefresh()
+})
+
 function handleCourseAction(course: StudentHomeDashboard['todayCourse']) {
   if (course.status === 'none') {
     goCourses()
   } else {
-    // Navigate to course detail/check-in
     uni.navigateTo({ url: `/pages/student/courses/detail?id=${course.id}` })
   }
 }
@@ -155,12 +172,14 @@ onLoad(() => {
 })
 
 onShow(() => {
-  loadDashboard()
+  if (isLoggedIn() && !dashboard.value) {
+    loadDashboard()
+  }
 })
 </script>
 
 <style scoped lang="scss">
-.page {
+.student-home {
   min-height: 100vh;
   background-color: #FFFFFF;
   padding: 0 32rpx 64rpx;
@@ -199,16 +218,33 @@ onShow(() => {
   }
 }
 
-.loading-placeholder {
-  height: 400rpx;
+.state-container {
+  min-height: 600rpx;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  text-align: center;
+  padding: 40rpx;
+
+  .state-title {
+    font-size: 32rpx;
+    font-weight: 700;
+    color: #1E293B;
+    margin-bottom: 12rpx;
+  }
+
+  .state-copy {
+    font-size: 26rpx;
+    color: #64748B;
+    margin-bottom: 40rpx;
+  }
 }
 
 .feature-grid {
   display: flex;
   gap: 24rpx;
+  margin-top: 40rpx;
   margin-bottom: 80rpx;
 }
 

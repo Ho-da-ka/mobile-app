@@ -35,11 +35,11 @@ function handleAction() {
         <view class="course-name">{{ todayCourse.name }}</view>
         <view class="course-info">
           <view class="info-item">
-            <u-icon name="clock" size="24rpx" color="#64748B" />
+            <up-icon name="clock" size="24rpx" color="#64748B" />
             <text>{{ todayCourse.time }}</text>
           </view>
           <view class="info-item">
-            <u-icon name="map-fill" size="24rpx" color="#64748B" />
+            <up-icon name="map-fill" size="24rpx" color="#64748B" />
             <text>{{ todayCourse.location }}</text>
           </view>
         </view>
@@ -47,9 +47,13 @@ function handleAction() {
     </view>
     
     <view class="hub-footer">
-      <button class="cta-button" @click="handleAction">
-        {{ todayCourse.ctaLabel }}
-      </button>
+      <up-button
+        :text="todayCourse.ctaLabel"
+        type="primary"
+        shape="circle"
+        @click="handleAction"
+        :customStyle="{ height: '90rpx', fontWeight: '700' }"
+      ></up-button>
     </view>
   </view>
 </template>

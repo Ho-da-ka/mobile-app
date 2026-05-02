@@ -15,7 +15,7 @@ export function buildStudentHomeDashboard(data: StudentHomeData): StudentHomeDas
 
   // 1. Calculate progress for the current month
   const monthlyCourses = courses.filter(c => 
-    c.startTime.startsWith(currentMonthStr) && c.bookingStatus === 'BOOKED'
+    c.startTime && c.startTime.startsWith(currentMonthStr) && c.bookingStatus === 'BOOKED'
   );
   const checkedInCourses = monthlyCourses.filter(c => c.checkinStatus === 'CHECKED_IN');
   const progress = monthlyCourses.length > 0 
@@ -24,8 +24,8 @@ export function buildStudentHomeDashboard(data: StudentHomeData): StudentHomeDas
 
   // 2. Today's Course Logic
   const todayCourses = courses
-    .filter(c => c.startTime.startsWith(todayStr) && c.bookingStatus === 'BOOKED')
-    .sort((a, b) => a.startTime.localeCompare(b.startTime));
+    .filter(c => c.startTime && c.startTime.startsWith(todayStr) && c.bookingStatus === 'BOOKED')
+    .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
 
   let todayCourse: StudentHomeDashboard['todayCourse'] = {
     name: '暂无课程',
