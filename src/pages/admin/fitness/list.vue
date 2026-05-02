@@ -62,7 +62,7 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { onLoad, onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import { listFitnessRecords, type FitnessRecord } from '@/api/modules/fitness'
+import { listFitnessTests, type FitnessTestRecord as FitnessRecord } from '@/api/modules/fitness'
 import { isLoggedIn } from '@/store/auth'
 import { showError } from '@/utils/error'
 
@@ -82,7 +82,7 @@ async function fetchData() {
   if (loading.value) return
   loading.value = true
   try {
-    const data = await listFitnessRecords({
+    const data = await listFitnessTests({
       studentName: query.studentName.trim() || undefined
     })
     rows.value = data
