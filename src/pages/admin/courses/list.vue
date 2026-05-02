@@ -91,7 +91,8 @@ import { showError } from '@/utils/error'
 
 const QUERY_DRAFT_KEY = 'admin.courses.query'
 const defaults = { page: 0, size: 10, name: '' }
-const query = reactive({ ...defaults, ...loadDraft(QUERY_DRAFT_KEY, defaults) })\nconst loading = ref(false)
+const query = reactive({ ...defaults, ...loadDraft(QUERY_DRAFT_KEY, defaults) })
+const loading = ref(false)
 const rows = ref<Course[]>([])
 const totalPages = ref(1)
 
