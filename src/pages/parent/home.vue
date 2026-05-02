@@ -51,6 +51,12 @@
         </view>
       </view>
 
+      <!-- AI Analysis Feed -->
+      <AiDashboardFeed 
+        :overview="overview" 
+        @expand="navigate(`/pages/parent/growth/index?studentId=${currentStudentId}`)" 
+      />
+
       <!-- Timeline Content -->
       <view class="timeline-container">
         <view v-if="dashboard.timeline.length > 0" class="timeline-list">
@@ -128,6 +134,7 @@ import { showError, showSuccess } from '@/utils/error'
 // New Components
 import ParentDateStrip from './components/ParentDateStrip.vue'
 import TimelineItem from './components/TimelineItem.vue'
+import AiDashboardFeed from './components/AiDashboardFeed.vue'
 
 const loading = ref(false)
 const errorText = ref('')

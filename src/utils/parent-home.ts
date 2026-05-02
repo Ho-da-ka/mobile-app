@@ -15,6 +15,7 @@ const CURRENT_CHILD_KEY = 'zf_parent_home_student_id'
 const PRIMARY_ACTIONS: ParentHomeAction[] = [
   { key: 'courses', label: '课程预约', hint: '查看可预约课程', url: '/pages/parent/courses/list', variant: 'primary' },
   { key: 'growth', label: '成长总览', hint: '查看阶段表现', url: '/pages/parent/growth/index', variant: 'primary' },
+  { key: 'ai-analysis', label: 'AI智慧分析', hint: '查看智能成长简报', url: '/pages/parent/growth/index', variant: 'primary' },
   { key: 'checkin', label: '签到记录', hint: '查看到课情况', url: '/pages/parent/checkin/list', variant: 'primary' },
   { key: 'children', label: '我的孩子', hint: '切换孩子档案', url: '/pages/parent/children/list', variant: 'primary' }
 ]
